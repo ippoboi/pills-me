@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { startAuthentication } from "@simplewebauthn/browser";
-import { Fingerprint, Lock, Shield, Smartphone } from "lucide-react";
+import { Fingerprint, Loader2 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { HugeiconsIcon } from "@hugeicons/react";
 import {
@@ -102,23 +102,42 @@ export default function AuthPage() {
             disabled={loading || lookingUpUser}
             className="w-full h-10 rounded-xl bg-white text-slate-900 font-medium hover:bg-gray-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            Create passkey
+            {loading ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              "Create passkey"
+            )}
           </button>
 
           <button
             onClick={handleUseExistingPasskey}
             disabled={loading || lookingUpUser}
             className="w-full h-10 rounded-xl bg-white/10 backdrop-blur-sm border border-white/30 text-white font-medium hover:bg-white/20 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+            aria-busy={loading}
           >
-            <HugeiconsIcon icon={Key01FreeIcons} className="w-4 h-4" />
-            Use existing passkey
+            {loading ? (
+              <>
+                <Loader2 className="h-4 w-4 animate-spin" />
+              </>
+            ) : (
+              <>
+                <HugeiconsIcon icon={Key01FreeIcons} className="w-4 h-4" />
+                Use existing passkey
+              </>
+            )}
           </button>
         </div>
+
+        {loading && (
+          <p className="text-sm text-white/80">
+            Confirm the prompt on your device to finish signing in.
+          </p>
+        )}
       </div>
 
       {/* Feature callouts */}
       <div className="flex flex-col md:flex-row gap-12 text-center absolute bottom-8 mx-auto">
-        <div className="flex items-center gap-6 max-w-md">
+        <div className="flex items-center gap-6 max-w-md text-white">
           <HugeiconsIcon icon={FaceIdFreeIcons} className="w-10 h-10" />
           <div className="text-left space-y-1">
             <h3 className="text-lg font-medium">Go Password-Free</h3>
@@ -129,7 +148,7 @@ export default function AuthPage() {
           </div>
         </div>
 
-        <div className="flex items-center gap-6 max-w-md">
+        <div className="flex items-center gap-6 max-w-md text-white">
           <HugeiconsIcon icon={LockPasswordFreeIcons} className="w-12 h-12" />
           <div className="text-left space-y-1">
             <h3 className="text-lg font-medium">Built-in Security</h3>
@@ -140,7 +159,7 @@ export default function AuthPage() {
           </div>
         </div>
 
-        <div className="flex items-center gap-6 max-w-md">
+        <div className="flex items-center gap-6 max-w-md text-white">
           <HugeiconsIcon
             icon={ComputerPhoneSyncFreeIcons}
             className="w-12 h-12"

@@ -11,12 +11,12 @@ const buttonVariants = cva(
       variant: {
         default: "bg-blue-600 text-white hover:bg-blue-700",
         secondary: "bg-blue-100 text-blue-600 hover:bg-blue-200",
-        outline:
-          "border border-input bg-background shadow-sm hover:bg-accent hover:text-accent-foreground",
+        outline: "border border-gray-200 bg-white hover:bg-gray-50",
       },
       size: {
         default: "h-10 pl-3 pr-4 py-3",
         sm: "h-8 pl-2.5 pr-3 py-3",
+        "default-no-icon": "h-10 px-3 py-3",
       },
     },
     defaultVariants: {

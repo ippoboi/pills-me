@@ -11,6 +11,8 @@ import { createClient } from "@/lib/supabase/client";
 import { Add01FreeIcons } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
 import Image from "next/image";
+import { LogoutButton } from "@/components/logout-button";
+import SupplementCreationForm from "@/components/supplement-creation-form";
 
 interface Passkey {
   id: string;
@@ -34,6 +36,7 @@ export default function ProtectedPage() {
   const [displayName, setDisplayName] = useState<string>("");
   const [passkeys, setPasskeys] = useState<Passkey[]>([]);
   const [loading, setLoading] = useState(true);
+  const [isFormOpen, setIsFormOpen] = useState(false);
 
   useEffect(() => {
     // Determine auth via app cookie
@@ -81,7 +84,7 @@ export default function ProtectedPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-100 text-black flex flex-col items-center justify-center">
+    <div className="min-h-screen bg-gray-100 text-gray-900 flex flex-col items-center justify-center">
       <DotGrid fillViewport absolute zIndex={0} />
       <div className="z-10 flex flex-col items-center justify-center gap-8">
         <div className="space-y-1">
@@ -108,7 +111,7 @@ export default function ProtectedPage() {
               Press the button below to track your first supplement.
             </p>
           </div>
-          <Button variant="default">
+          <Button variant="default" onClick={() => setIsFormOpen(true)}>
             <HugeiconsIcon
               icon={Add01FreeIcons}
               strokeWidth={2}
@@ -118,6 +121,10 @@ export default function ProtectedPage() {
           </Button>
         </div>
       </div>
+      <SupplementCreationForm
+        open={isFormOpen}
+        onClose={() => setIsFormOpen(false)}
+      />
     </div>
   );
 }
