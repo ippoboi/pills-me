@@ -1,7 +1,26 @@
 import { updateSession } from "@/lib/supabase/middleware";
-import { type NextRequest } from "next/server";
+import { verifySessionToken } from "@/lib/session";
+import { NextResponse, type NextRequest } from "next/server";
 
 export async function proxy(request: NextRequest) {
+  // Skip Supabase session check for passkey and auth API routes
+  if (
+    request.nextUrl.pathname.startsWith("/api/passkey") ||
+    request.nextUrl.pathname.startsWith("/api/auth")
+  ) {
+    return;
+  }
+
+  // Accept app cookie session for gating protected routes
+  const cookie = request.cookies.get("pm_session")?.value;
+  if (cookie) {
+    const payload = await verifySessionToken(cookie);
+    if (payload?.uid) {
+      // Consider authenticated for routing purposes
+      return NextResponse.next({ request });
+    }
+  }
+
   return await updateSession(request);
 }
 

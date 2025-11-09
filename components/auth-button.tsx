@@ -1,28 +1,51 @@
+"use client";
+
 import Link from "next/link";
 import { Button } from "./ui/button";
-import { createClient } from "@/lib/supabase/server";
-import { LogoutButton } from "./logout-button";
+import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+import { createClient } from "@/lib/supabase/client";
 
-export async function AuthButton() {
-  const supabase = await createClient();
+export function AuthButton() {
+  const [userId, setUserId] = useState<string | null>(null);
+  const [displayName, setDisplayName] = useState<string>("");
+  const router = useRouter();
 
-  // You can also use getUser() which will be slower.
-  const { data } = await supabase.auth.getClaims();
+  useEffect(() => {
+    // Check for authenticated user from Supabase Auth
+    const checkSession = async () => {
+      const supabase = createClient();
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
 
-  const user = data?.claims;
+      if (session) {
+        setUserId(session.user.id);
+        setDisplayName(session.user.user_metadata?.display_name || "User");
+      }
+    };
 
-  return user ? (
+    checkSession();
+  }, []);
+
+  const handleLogout = async () => {
+    const supabase = createClient();
+    await supabase.auth.signOut();
+    setUserId(null);
+    router.push("/auth");
+  };
+
+  return userId ? (
     <div className="flex items-center gap-4">
-      Hey, {user.email}!
-      <LogoutButton />
+      <span className="text-sm">Hey, {displayName}!</span>
+      <Button onClick={handleLogout} size="sm" variant={"outline"}>
+        Sign out
+      </Button>
     </div>
   ) : (
     <div className="flex gap-2">
-      <Button asChild size="sm" variant={"outline"}>
-        <Link href="/auth/login">Sign in</Link>
-      </Button>
       <Button asChild size="sm" variant={"default"}>
-        <Link href="/auth/sign-up">Sign up</Link>
+        <Link href="/auth">Sign in with Passkey</Link>
       </Button>
     </div>
   );
