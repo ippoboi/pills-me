@@ -1,12 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
-import {
-  getTodayDate,
-  isValidDateString,
-  groupScheduleByTimeOfDay,
-  formatAdherenceData,
-  calculateScheduleStats,
-} from "@/lib/supplements";
+import { getTodayDate, isValidDateString } from "@/lib/supplements";
 
 export async function GET(request: NextRequest) {
   try {
@@ -40,8 +34,8 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // Query today's schedule with adherence data
-    const { data: scheduleData, error: scheduleError } = await supabase
+    // Get all active supplements for the user that should be active today
+    const { data: supplements, error: supplementsError } = await supabase
       .from("supplements")
       .select(
         `
@@ -51,14 +45,11 @@ export async function GET(request: NextRequest) {
         recommendation,
         source_name,
         source_url,
-        supplement_schedules!inner (
+        start_date,
+        end_date,
+        supplement_schedules (
           id,
           time_of_day
-        ),
-        supplement_adherence (
-          id,
-          taken_at,
-          schedule_id
         )
       `
       )
@@ -66,58 +57,23 @@ export async function GET(request: NextRequest) {
       .eq("status", "ACTIVE")
       .is("deleted_at", null)
       .lte("start_date", targetDate)
-      .or(`end_date.is.null,end_date.gte.${targetDate}`)
-      .eq("supplement_adherence.taken_at", targetDate);
+      .or(`end_date.is.null,end_date.gte.${targetDate}`);
 
-    if (scheduleError) {
-      console.error("Error fetching schedule:", scheduleError);
+    if (supplementsError) {
+      console.error("Error fetching supplements:", supplementsError);
       return NextResponse.json(
         {
           error: "Internal Server Error",
-          message: "Failed to fetch schedule",
-          details: scheduleError.message,
+          message: "Failed to fetch supplements",
+          details: supplementsError.message,
         },
         { status: 500 }
       );
     }
 
-    // Transform the data to match our expected format
-    const transformedData: any[] = [];
-
-    scheduleData?.forEach((supplement) => {
-      supplement.supplement_schedules.forEach((schedule) => {
-        // Check if this schedule has adherence for the target date
-        const adherence = supplement.supplement_adherence?.find(
-          (a) => a.schedule_id === schedule.id && a.taken_at === targetDate
-        );
-
-        transformedData.push({
-          supplement_id: supplement.id,
-          schedule_id: schedule.id,
-          name: supplement.name,
-          capsules_per_take: supplement.capsules_per_take,
-          recommendation: supplement.recommendation || "",
-          source_name: supplement.source_name || "",
-          source_url: supplement.source_url || "",
-          time_of_day: schedule.time_of_day,
-          adherence_id: adherence?.id || null,
-          is_taken: !!adherence,
-        });
-      });
-    });
-
-    // Format and group the data
-    const formattedData = formatAdherenceData(transformedData);
-    const groupedSchedule = groupScheduleByTimeOfDay(formattedData);
-
-    // Calculate stats
-    const allSchedules = Object.values(groupedSchedule).flat();
-    const stats = calculateScheduleStats(allSchedules);
-
     return NextResponse.json({
       date: targetDate,
-      schedule: groupedSchedule,
-      stats,
+      supplements: supplements || [],
     });
   } catch (error) {
     console.error("Unexpected error in today's schedule:", error);

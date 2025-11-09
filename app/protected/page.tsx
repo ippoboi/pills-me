@@ -1,18 +1,16 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
-import { startRegistration } from "@simplewebauthn/browser";
-import { Key, Monitor, Smartphone } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
+import SupplementCreationForm from "@/components/supplement-creation-form";
 import DotGrid from "@/components/ui/DotGrid";
-import { createClient } from "@/lib/supabase/client";
+import { useTodaySupplements } from "@/lib/hooks/use-supplements";
+import { formatDisplayDate } from "@/lib/utils";
 import { Add01FreeIcons } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
 import Image from "next/image";
-import { LogoutButton } from "@/components/logout-button";
-import SupplementCreationForm from "@/components/supplement-creation-form";
 
 interface Passkey {
   id: string;
@@ -37,6 +35,21 @@ export default function ProtectedPage() {
   const [passkeys, setPasskeys] = useState<Passkey[]>([]);
   const [loading, setLoading] = useState(true);
   const [isFormOpen, setIsFormOpen] = useState(false);
+
+  // TanStack Query for today's supplements
+  const {
+    data: todayData,
+    isLoading: supplementsLoading,
+    error: supplementsError,
+    refetch: refetchSupplements,
+  } = useTodaySupplements();
+
+  // Debug logging
+  useEffect(() => {
+    console.log("Today's supplements data:", todayData);
+    console.log("Loading:", supplementsLoading);
+    console.log("Error:", supplementsError);
+  }, [todayData, supplementsLoading, supplementsError]);
 
   useEffect(() => {
     // Determine auth via app cookie
@@ -83,6 +96,126 @@ export default function ProtectedPage() {
     return null;
   }
 
+  // Check if we have supplements data
+  const hasSupplements = todayData && todayData.supplements.length > 0;
+
+  // Show loading state
+  if (supplementsLoading) {
+    return (
+      <div className="min-h-screen bg-gray-100 text-gray-900 flex flex-col items-center justify-center">
+        <DotGrid fillViewport absolute zIndex={0} />
+        <div className="z-10">
+          <p>Loading supplements...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Show error state
+  if (supplementsError) {
+    return (
+      <div className="min-h-screen bg-gray-100 text-gray-900 flex flex-col items-center justify-center">
+        <DotGrid fillViewport absolute zIndex={0} />
+        <div className="z-10 text-center">
+          <p className="text-red-600">
+            Error loading supplements: {supplementsError.message}
+          </p>
+          <Button
+            variant="default"
+            onClick={() => setIsFormOpen(true)}
+            className="mt-4"
+          >
+            <HugeiconsIcon
+              icon={Add01FreeIcons}
+              strokeWidth={2}
+              className="w-4 h-4"
+            />
+            Track new
+          </Button>
+        </div>
+        <SupplementCreationForm
+          open={isFormOpen}
+          onClose={() => setIsFormOpen(false)}
+        />
+      </div>
+    );
+  }
+
+  // Show supplements list if we have data
+  if (hasSupplements) {
+    return (
+      <div className="min-h-screen bg-gray-100 text-gray-900 p-8">
+        <div className="z-10 max-w-4xl mx-auto">
+          <div className="flex justify-between items-center mb-8">
+            <div>
+              <h1 className="text-3xl font-medium">Today</h1>
+              <p className="text-lg text-gray-600">
+                Mark your doses for{" "}
+                <span className="text-gray-900">
+                  {formatDisplayDate(todayData?.date) || todayData?.date}
+                </span>
+              </p>
+            </div>
+            <Button variant="default" onClick={() => setIsFormOpen(true)}>
+              <HugeiconsIcon
+                icon={Add01FreeIcons}
+                strokeWidth={2}
+                className="w-4 h-4"
+              />
+              Track new
+            </Button>
+          </div>
+
+          {/* Simple supplements list */}
+          <div className="space-y-4">
+            {todayData!.supplements.map((supplement) => (
+              <div
+                key={supplement.id}
+                className="bg-white p-4 rounded-lg border"
+              >
+                <div className="flex justify-between items-start">
+                  <div>
+                    <h3 className="font-medium">{supplement.name}</h3>
+                    <p className="text-sm text-gray-600">
+                      {supplement.capsules_per_take} capsule
+                      {supplement.capsules_per_take > 1 ? "s" : ""}
+                    </p>
+                    {supplement.recommendation && (
+                      <p className="text-sm text-gray-500 mt-1">
+                        {supplement.recommendation}
+                      </p>
+                    )}
+                    {supplement.source_name && (
+                      <p className="text-sm text-blue-600 mt-1">
+                        {supplement.source_name}
+                      </p>
+                    )}
+                    <div className="flex gap-2 mt-2">
+                      {supplement.supplement_schedules.map((schedule) => (
+                        <span
+                          key={schedule.id}
+                          className="px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded"
+                        >
+                          {schedule.time_of_day.toLowerCase().replace("_", " ")}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          <SupplementCreationForm
+            open={isFormOpen}
+            onClose={() => setIsFormOpen(false)}
+          />
+        </div>
+      </div>
+    );
+  }
+
+  // Show empty state if no supplements
   return (
     <div className="min-h-screen bg-gray-100 text-gray-900 flex flex-col items-center justify-center">
       <DotGrid fillViewport absolute zIndex={0} />
