@@ -104,7 +104,7 @@ export default function ProtectedPage() {
   // Show loading state
   if (supplementsLoading) {
     return (
-      <div className="min-h-screen bg-gray-100 text-gray-900 flex flex-col items-center justify-center">
+      <div className="flex flex-col items-center justify-center">
         <DotGrid fillViewport absolute zIndex={0} />
         <div className="z-10">
           <Loader2 className="w-8 h-8 animate-spin" />
@@ -116,7 +116,7 @@ export default function ProtectedPage() {
   // Show error state
   if (supplementsError) {
     return (
-      <div className="min-h-screen bg-gray-100 text-gray-900 flex flex-col items-center justify-center">
+      <div className="flex flex-col items-center justify-center">
         <DotGrid fillViewport absolute zIndex={0} />
         <div className="z-10 text-center">
           <p className="text-red-600">
@@ -142,7 +142,7 @@ export default function ProtectedPage() {
   // Show supplements list if we have data
   if (hasSupplements) {
     return (
-      <div className="min-h-screen bg-gray-100 text-gray-900 p-8">
+      <div className="p-8">
         <div className="z-10 max-w-4xl mx-auto">
           <div className="flex justify-between items-center mb-8">
             <div>
@@ -181,7 +181,7 @@ export default function ProtectedPage() {
 
   // Show empty state if no supplements
   return (
-    <div className="min-h-screen bg-gray-100 text-gray-900 flex flex-col items-center justify-center">
+    <div className="flex flex-col items-center justify-center">
       <DotGrid fillViewport absolute zIndex={0} />
       <div className="z-10 flex flex-col items-center justify-center gap-8">
         <div className="space-y-1">
