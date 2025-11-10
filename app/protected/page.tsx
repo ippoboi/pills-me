@@ -6,11 +6,13 @@ import { useEffect, useState } from "react";
 
 import SupplementCreationForm from "@/components/supplement-creation-form";
 import DotGrid from "@/components/ui/DotGrid";
+import SupplementsSection from "@/components/protected/supplements-section";
 import { useTodaySupplements } from "@/lib/hooks/use-supplements";
 import { formatDisplayDate } from "@/lib/utils";
 import { Add01FreeIcons } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
 import Image from "next/image";
+import { Loader2 } from "lucide-react";
 
 interface Passkey {
   id: string;
@@ -105,7 +107,7 @@ export default function ProtectedPage() {
       <div className="min-h-screen bg-gray-100 text-gray-900 flex flex-col items-center justify-center">
         <DotGrid fillViewport absolute zIndex={0} />
         <div className="z-10">
-          <p>Loading supplements...</p>
+          <Loader2 className="w-8 h-8 animate-spin" />
         </div>
       </div>
     );
@@ -166,45 +168,11 @@ export default function ProtectedPage() {
             </Button>
           </div>
 
-          {/* Simple supplements list */}
-          <div className="space-y-4">
-            {todayData!.supplements.map((supplement) => (
-              <div
-                key={supplement.id}
-                className="bg-white p-4 rounded-lg border"
-              >
-                <div className="flex justify-between items-start">
-                  <div>
-                    <h3 className="font-medium">{supplement.name}</h3>
-                    <p className="text-sm text-gray-600">
-                      {supplement.capsules_per_take} capsule
-                      {supplement.capsules_per_take > 1 ? "s" : ""}
-                    </p>
-                    {supplement.recommendation && (
-                      <p className="text-sm text-gray-500 mt-1">
-                        {supplement.recommendation}
-                      </p>
-                    )}
-                    {supplement.source_name && (
-                      <p className="text-sm text-blue-600 mt-1">
-                        {supplement.source_name}
-                      </p>
-                    )}
-                    <div className="flex gap-2 mt-2">
-                      {supplement.supplement_schedules.map((schedule) => (
-                        <span
-                          key={schedule.id}
-                          className="px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded"
-                        >
-                          {schedule.time_of_day.toLowerCase().replace("_", " ")}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
+          {/* Supplements organized by time of day */}
+          <SupplementsSection
+            supplements={todayData!.supplements}
+            date={todayData!.date}
+          />
 
           <SupplementCreationForm
             open={isFormOpen}

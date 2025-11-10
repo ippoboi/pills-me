@@ -1,6 +1,5 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
 import {
@@ -8,19 +7,19 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import { ChevronsUpDown, Loader2 } from "lucide-react";
-import { HugeiconsIcon } from "@hugeicons/react";
+import { useCreateSupplement } from "@/lib/hooks/use-supplements";
+import { Database } from "@/lib/supabase/database.types";
+import { SupplementInput } from "@/lib/supplements";
 import {
   Calendar04FreeIcons,
-  Link05FreeIcons,
-  Tick01FreeIcons,
-  Tick02FreeIcons,
   Cancel01FreeIcons,
+  Link05FreeIcons,
+  Tick02FreeIcons,
 } from "@hugeicons/core-free-icons";
-import { useCreateSupplement } from "@/lib/hooks/use-supplements";
-import { SupplementInput } from "@/lib/supplements";
-import { Database } from "@/lib/supabase/database.types";
-import { motion, MotionConfig, AnimatePresence } from "motion/react";
+import { HugeiconsIcon } from "@hugeicons/react";
+import { ChevronsUpDown, Loader2 } from "lucide-react";
+import { AnimatePresence, motion, MotionConfig } from "motion/react";
+import { useEffect, useState } from "react";
 import useMeasure from "react-use-measure";
 
 type TimeOfDay = Database["public"]["Enums"]["time_of_day"];
@@ -452,23 +451,43 @@ export default function SupplementCreationForm({
                                           className="inline-flex items-center gap-1 pl-2 pr-1.5 py-1 rounded-lg bg-white border border-gray-200"
                                         >
                                           <span>{label}</span>
-                                          <button
-                                            type="button"
+                                          <div
+                                            role="button"
+                                            tabIndex={0}
                                             onClick={(e) => {
                                               e.stopPropagation();
-                                              handleTimeOfDayRemove(time);
+                                              if (
+                                                !createSupplementMutation.isPending
+                                              ) {
+                                                handleTimeOfDayRemove(time);
+                                              }
                                             }}
-                                            disabled={
+                                            onKeyDown={(e) => {
+                                              if (
+                                                e.key === "Enter" ||
+                                                e.key === " "
+                                              ) {
+                                                e.preventDefault();
+                                                e.stopPropagation();
+                                                if (
+                                                  !createSupplementMutation.isPending
+                                                ) {
+                                                  handleTimeOfDayRemove(time);
+                                                }
+                                              }
+                                            }}
+                                            className={`flex items-center justify-center w-5 h-5 rounded hover:bg-gray-100 transition-colors cursor-pointer ${
                                               createSupplementMutation.isPending
-                                            }
-                                            className="flex items-center justify-center w-5 h-5 rounded hover:bg-gray-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                                ? "opacity-50 cursor-not-allowed"
+                                                : ""
+                                            }`}
                                           >
                                             <HugeiconsIcon
                                               icon={Cancel01FreeIcons}
                                               className="w-3 h-3 text-gray-400 hover:text-gray-600"
                                               strokeWidth={2}
                                             />
-                                          </button>
+                                          </div>
                                         </span>
                                       );
                                     })
