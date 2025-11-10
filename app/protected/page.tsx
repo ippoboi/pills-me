@@ -7,7 +7,7 @@ import { useEffect, useState } from "react";
 import SupplementCreationForm from "@/components/supplement-creation-form";
 import DotGrid from "@/components/ui/DotGrid";
 import SupplementsSection from "@/components/protected/supplements-section";
-import { useTodaySupplements } from "@/lib/hooks/use-supplements";
+import { useTodaySupplements } from "@/lib/hooks";
 import { formatDisplayDate } from "@/lib/utils";
 import { Add01FreeIcons } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";

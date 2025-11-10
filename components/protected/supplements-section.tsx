@@ -1,14 +1,15 @@
 "use client";
 
-import { HugeiconsIcon } from "@hugeicons/react";
+import { Supplement } from "@/lib/types";
+import { getUserTimezone } from "@/lib/utils/timezone";
 import {
+  Moon02FreeIcons,
   Sun01FreeIcons,
-  Moon01FreeIcons,
   SunriseFreeIcons,
   SunsetFreeIcons,
-  Moon02FreeIcons,
 } from "@hugeicons/core-free-icons";
-import { Supplement } from "@/lib/api/supplements";
+import { HugeiconsIcon } from "@hugeicons/react";
+import { useEffect, useState } from "react";
 import SupplementCard from "./supplement-card";
 
 type TimeOfDay = "MORNING" | "LUNCH" | "DINNER" | "BEFORE_SLEEP";
@@ -51,20 +52,27 @@ export default function SupplementsSection({
   supplements,
   date,
 }: SupplementsSectionProps) {
-  // Group supplements by time of day
+  const [userTimezone, setUserTimezone] = useState<string>("UTC");
+
+  // Detect user timezone on mount
+  useEffect(() => {
+    setUserTimezone(getUserTimezone());
+  }, []);
+  // Group supplements by time of day, allowing multiple schedules per supplement
   const groupedSupplements = supplements.reduce((acc, supplement) => {
     supplement.supplement_schedules.forEach((schedule) => {
       const timeOfDay = schedule.time_of_day as TimeOfDay;
       if (!acc[timeOfDay]) {
         acc[timeOfDay] = [];
       }
-      // Only add if not already added (supplement can have multiple schedules)
-      if (!acc[timeOfDay].find((s) => s.id === supplement.id)) {
-        acc[timeOfDay].push(supplement);
-      }
+      // Create a supplement entry for each schedule (allows multiple doses per time period)
+      acc[timeOfDay].push({
+        ...supplement,
+        currentSchedule: schedule, // Add current schedule to distinguish multiple doses
+      });
     });
     return acc;
-  }, {} as Record<TimeOfDay, Supplement[]>);
+  }, {} as Record<TimeOfDay, (Supplement & { currentSchedule: any })[]>);
 
   return (
     <div className="space-y-6">
@@ -81,8 +89,12 @@ export default function SupplementsSection({
           <div key={config.value} className="space-y-3 ">
             {/* Section Header */}
             <div className="flex items-center justify-between px-6">
-              <div className="flex items-center gap-2">
-                <HugeiconsIcon icon={config.icon} className="w-5 h-5" />
+              <div className="flex items-center gap-2 text-gray-600">
+                <HugeiconsIcon
+                  icon={config.icon}
+                  className="w-5 h-5"
+                  strokeWidth={2}
+                />
                 <h2 className="font-medium">{config.label}</h2>
               </div>
               <div className="text-blue-600">
@@ -91,16 +103,12 @@ export default function SupplementsSection({
             </div>
 
             {/* Supplement Cards */}
-            <div className="space-y-3">
-              {supplementsForTime.map((supplement) => (
+            <div className="space-y-1">
+              {supplementsForTime.map((supplement, index) => (
                 <SupplementCard
-                  key={supplement.id}
+                  key={`${supplement.id}-${supplement.currentSchedule.id}`}
                   supplement={supplement}
-                  scheduleId={
-                    supplement.supplement_schedules.find(
-                      (s) => s.time_of_day === config.value
-                    )?.id || ""
-                  }
+                  scheduleId={supplement.currentSchedule.id}
                   date={date}
                 />
               ))}

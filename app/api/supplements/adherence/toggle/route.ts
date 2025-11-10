@@ -1,11 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
-import { isValidDateString } from "@/lib/supplements";
+import { isValidTimestamp } from "@/lib/utils/timezone";
 
 interface ToggleAdherenceRequest {
   supplement_id: string;
   schedule_id: string;
-  taken_at: string;
+  taken_at: string; // Now expects ISO timestamp string instead of date string
 }
 
 export async function POST(request: NextRequest) {
@@ -47,12 +47,13 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Validate date format
-    if (!isValidDateString(body.taken_at)) {
+    // Validate timestamp format
+    if (!isValidTimestamp(body.taken_at)) {
       return NextResponse.json(
         {
           error: "Bad Request",
-          message: "Invalid date format. Use YYYY-MM-DD",
+          message:
+            "Invalid timestamp format. Use ISO 8601 format (e.g., 2025-11-10T00:00:00.000Z)",
         },
         { status: 400 }
       );
@@ -171,6 +172,7 @@ export async function POST(request: NextRequest) {
       success: true,
       is_taken,
       adherence_id,
+      taken_at: body.taken_at, // Return the timestamp for client reference
     });
   } catch (error) {
     console.error("Unexpected error in adherence toggle:", error);

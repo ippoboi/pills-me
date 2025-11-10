@@ -1,109 +1,185 @@
-<a href="https://demo-nextjs-with-supabase.vercel.app/">
-  <img alt="Next.js and Supabase Starter Kit - the fastest way to build apps with Next.js and Supabase" src="https://demo-nextjs-with-supabase.vercel.app/opengraph-image.png">
-  <h1 align="center">Next.js and Supabase Starter Kit</h1>
-</a>
+# PillsMe - Open Source Supplement Tracker
 
 <p align="center">
- The fastest way to build apps with Next.js and Supabase
+  <strong>A modern, secure supplement tracking application powered by passkey authentication</strong>
 </p>
 
 <p align="center">
   <a href="#features"><strong>Features</strong></a> ·
-  <a href="#demo"><strong>Demo</strong></a> ·
-  <a href="#deploy-to-vercel"><strong>Deploy to Vercel</strong></a> ·
-  <a href="#clone-and-run-locally"><strong>Clone and run locally</strong></a> ·
-  <a href="#feedback-and-issues"><strong>Feedback and issues</strong></a>
-  <a href="#more-supabase-examples"><strong>More Examples</strong></a>
+  <a href="#getting-started"><strong>Getting Started</strong></a> ·
+  <a href="#tech-stack"><strong>Tech Stack</strong></a> ·
+  <a href="#contributing"><strong>Contributing</strong></a>
 </p>
-<br/>
+
+## Overview
+
+PillsMe is an open-source supplement tracking application that helps you stay on top of your daily supplement routine. With a focus on security and user experience, PillsMe uses modern passkey authentication (WebAuthn) to provide a password-free, secure sign-in experience.
 
 ## Features
 
-- Works across the entire [Next.js](https://nextjs.org) stack
-  - App Router
-  - Pages Router
-  - Middleware
-  - Client
-  - Server
-  - It just works!
-- supabase-ssr. A package to configure Supabase Auth to use cookies
-- Password-based authentication block installed via the [Supabase UI Library](https://supabase.com/ui/docs/nextjs/password-based-auth)
-- Styling with [Tailwind CSS](https://tailwindcss.com)
-- Components with [shadcn/ui](https://ui.shadcn.com/)
-- Optional deployment with [Supabase Vercel Integration and Vercel deploy](#deploy-your-own)
-  - Environment variables automatically assigned to Vercel project
+### 🔐 Password-Free Authentication
 
-## Demo
+- **Passkey-based authentication** using WebAuthn/SimpleWebAuthn
+- Sign in with Face ID, Touch ID, or other biometric authentication
+- No passwords to remember or manage
+- Secure, phishing-resistant authentication
 
-You can view a fully working demo at [demo-nextjs-with-supabase.vercel.app](https://demo-nextjs-with-supabase.vercel.app/).
+### 📊 Supplement Tracking
 
-## Deploy to Vercel
+- **Track multiple supplements** with custom schedules
+- **Flexible timing**: Schedule supplements for Morning, Lunch, Dinner, or Before Sleep
+- **Adherence tracking**: Mark doses as taken and view your adherence history
+- **Customizable details**: Add supplement name, dosage, reason, and source information
+- **Date range support**: Set start and end dates for supplement regimens
 
-Vercel deployment will guide you through creating a Supabase account and project.
+### 🎨 Modern User Interface
 
-After installation of the Supabase integration, all relevant environment variables will be assigned to the project so the deployment is fully functioning.
+- Clean, intuitive design built with [shadcn/ui](https://ui.shadcn.com/)
+- Responsive layout that works on all devices
+- Beautiful empty states and loading indicators
+- Organized by time of day for easy daily tracking
 
-[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2Fvercel%2Fnext.js%2Ftree%2Fcanary%2Fexamples%2Fwith-supabase&project-name=nextjs-with-supabase&repository-name=nextjs-with-supabase&demo-title=nextjs-with-supabase&demo-description=This+starter+configures+Supabase+Auth+to+use+cookies%2C+making+the+user%27s+session+available+throughout+the+entire+Next.js+app+-+Client+Components%2C+Server+Components%2C+Route+Handlers%2C+Server+Actions+and+Middleware.&demo-url=https%3A%2F%2Fdemo-nextjs-with-supabase.vercel.app%2F&external-id=https%3A%2F%2Fgithub.com%2Fvercel%2Fnext.js%2Ftree%2Fcanary%2Fexamples%2Fwith-supabase&demo-image=https%3A%2F%2Fdemo-nextjs-with-supabase.vercel.app%2Fopengraph-image.png)
+### 🔒 Security & Privacy
 
-The above will also clone the Starter kit to your GitHub, you can clone that locally and develop locally.
+- Built on [Supabase](https://supabase.com) with Row Level Security (RLS)
+- User data is isolated and secure
+- Open source - audit the code yourself
 
-If you wish to just develop locally and not deploy to Vercel, [follow the steps below](#clone-and-run-locally).
+## Tech Stack
 
-## Clone and run locally
+- **Framework**: [Next.js](https://nextjs.org) (App Router)
+- **Database**: [Supabase](https://supabase.com) (PostgreSQL)
+- **Authentication**: [SimpleWebAuthn](https://simplewebauthn.dev/) (WebAuthn/Passkeys)
+- **Styling**: [Tailwind CSS](https://tailwindcss.com)
+- **UI Components**: [shadcn/ui](https://ui.shadcn.com/)
+- **State Management**: [TanStack Query](https://tanstack.com/query)
+- **Language**: TypeScript
 
-1. You'll first need a Supabase project which can be made [via the Supabase dashboard](https://database.new)
+## Getting Started
 
-2. Create a Next.js app using the Supabase Starter template npx command
+### Prerequisites
+
+- Node.js 18+ and npm/yarn/pnpm
+- A Supabase account and project ([create one here](https://database.new))
+
+### Installation
+
+1. **Clone the repository**
 
    ```bash
-   npx create-next-app --example with-supabase with-supabase-app
+   git clone https://github.com/yourusername/pills-me.git
+   cd pills-me
    ```
+
+2. **Install dependencies**
 
    ```bash
-   yarn create next-app --example with-supabase with-supabase-app
+   npm install
+   # or
+   yarn install
+   # or
+   pnpm install
    ```
+
+3. **Set up environment variables**
+
+   Create a `.env.local` file in the root directory:
+
+   ```env
+   # Supabase Configuration
+   NEXT_PUBLIC_SUPABASE_URL=your_supabase_project_url
+   NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=your_supabase_publishable_key
+   SUPABASE_SERVICE_ROLE_KEY=your_supabase_service_role_key
+
+   # WebAuthn Configuration
+   NEXT_PUBLIC_RP_ID=localhost
+   NEXT_PUBLIC_RP_NAME=PillsMe
+   NEXT_PUBLIC_EXPECTED_ORIGIN=http://localhost:3000
+   ```
+
+   You can find your Supabase credentials in your [Supabase project settings](https://supabase.com/dashboard/project/_/settings/api).
+
+4. **Run database migrations**
+
+   Apply the database schema to your Supabase project:
 
    ```bash
-   pnpm create next-app --example with-supabase with-supabase-app
+   # Using Supabase CLI (recommended)
+   supabase db push
+
+   # Or manually run the migration file:
+   # supabase/migrations/create_supplement_tracking_schema.sql
    ```
 
-3. Use `cd` to change into the app's directory
+   The migration creates the following tables:
 
-   ```bash
-   cd with-supabase-app
-   ```
+   - `supplements` - Stores supplement information
+   - `supplement_schedules` - Defines when supplements should be taken
+   - `supplement_adherence` - Tracks when doses are marked as taken
+   - `user_preferences` - User-specific settings
 
-4. Rename `.env.example` to `.env.local` and update the following:
-
-  ```env
-  NEXT_PUBLIC_SUPABASE_URL=[INSERT SUPABASE PROJECT URL]
-  NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=[INSERT SUPABASE PROJECT API PUBLISHABLE OR ANON KEY]
-  ```
-  > [!NOTE]
-  > This example uses `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`, which refers to Supabase's new **publishable** key format.
-  > Both legacy **anon** keys and new **publishable** keys can be used with this variable name during the transition period. Supabase's dashboard may show `NEXT_PUBLIC_SUPABASE_ANON_KEY`; its value can be used in this example.
-  > See the [full announcement](https://github.com/orgs/supabase/discussions/29260) for more information.
-
-  Both `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` can be found in [your Supabase project's API settings](https://supabase.com/dashboard/project/_?showConnect=true)
-
-5. You can now run the Next.js local development server:
+5. **Start the development server**
 
    ```bash
    npm run dev
+   # or
+   yarn dev
+   # or
+   pnpm dev
    ```
 
-   The starter kit should now be running on [localhost:3000](http://localhost:3000/).
+   The application will be available at [http://localhost:3000](http://localhost:3000).
 
-6. This template comes with the default shadcn/ui style initialized. If you instead want other ui.shadcn styles, delete `components.json` and [re-install shadcn/ui](https://ui.shadcn.com/docs/installation/next)
+### First Time Setup
 
-> Check out [the docs for Local Development](https://supabase.com/docs/guides/getting-started/local-development) to also run Supabase locally.
+1. Navigate to the auth page
+2. Click "Create passkey" to register a new passkey
+3. Follow the prompts to create your passkey using your device's biometric authentication
+4. Start tracking your supplements!
 
-## Feedback and issues
+## Project Structure
 
-Please file feedback and issues over on the [Supabase GitHub org](https://github.com/supabase/supabase/issues/new/choose).
+```
+pills-me/
+├── app/                    # Next.js App Router pages and API routes
+│   ├── api/               # API endpoints
+│   │   ├── auth/         # Authentication endpoints
+│   │   ├── passkey/      # Passkey registration and authentication
+│   │   └── supplements/  # Supplement CRUD operations
+│   ├── auth/             # Authentication pages
+│   └── protected/        # Protected pages (require authentication)
+├── components/            # React components
+│   ├── protected/        # Protected route components
+│   └── ui/               # shadcn/ui components
+├── lib/                   # Utility functions and helpers
+│   ├── api/              # API client functions
+│   ├── hooks/            # Custom React hooks
+│   ├── supabase/         # Supabase client configuration
+│   └── webauthn.ts       # WebAuthn configuration
+└── supabase/
+    └── migrations/       # Database migrations
+```
 
-## More Supabase examples
+## Contributing
 
-- [Next.js Subscription Payments Starter](https://github.com/vercel/nextjs-subscription-payments)
-- [Cookie-based Auth and the Next.js 13 App Router (free course)](https://youtube.com/playlist?list=PL5S4mPUpp4OtMhpnp93EFSo42iQ40XjbF)
-- [Supabase Auth and the Next.js App Router](https://github.com/supabase/supabase/tree/master/examples/auth/nextjs)
+Contributions are welcome! Please feel free to submit a Pull Request. For major changes, please open an issue first to discuss what you would like to change.
+
+1. Fork the repository
+2. Create your feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'Add some amazing feature'`)
+4. Push to the branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request
+
+## License
+
+This project is open source and available under the [MIT License](LICENSE).
+
+## Acknowledgments
+
+- Built with [Next.js](https://nextjs.org) and [Supabase](https://supabase.com)
+- Authentication powered by [SimpleWebAuthn](https://simplewebauthn.dev/)
+- UI components from [shadcn/ui](https://ui.shadcn.com/)
+
+---
+
+Made with ❤️ for better health tracking

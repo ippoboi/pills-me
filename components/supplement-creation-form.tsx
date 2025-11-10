@@ -7,9 +7,9 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import { useCreateSupplement } from "@/lib/hooks/use-supplements";
+import { useCreateSupplement } from "@/lib/hooks";
 import { Database } from "@/lib/supabase/database.types";
-import { SupplementInput } from "@/lib/supplements";
+import { SupplementInput } from "@/lib/types";
 import {
   Calendar04FreeIcons,
   Cancel01FreeIcons,

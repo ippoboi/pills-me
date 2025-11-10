@@ -1,9 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
-import {
-  validateSupplementInput,
-  type SupplementInput,
-} from "@/lib/supplements";
+import { validateSupplementInput } from "@/lib/utils/validation";
+import { type SupplementInput } from "@/lib/types";
 import { Database } from "@/lib/supabase/database.types";
 
 type TimeOfDay = Database["public"]["Enums"]["time_of_day"];

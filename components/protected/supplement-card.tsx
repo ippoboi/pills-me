@@ -1,14 +1,15 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { HugeiconsIcon } from "@hugeicons/react";
 import {
   Link05FreeIcons,
   Medicine02FreeIcons,
   Tick01FreeIcons,
 } from "@hugeicons/core-free-icons";
-import { Supplement } from "@/lib/api/supplements";
+import { Supplement } from "@/lib/types";
 import { Checkbox } from "@/components/ui/checkbox";
+import { getUserTimezone, createTimestampForDate } from "@/lib/utils/timezone";
 
 interface SupplementCardProps {
   supplement: Supplement;
@@ -22,6 +23,12 @@ export default function SupplementCard({
   date,
 }: SupplementCardProps) {
   const [isTaken, setIsTaken] = useState(false);
+  const [userTimezone, setUserTimezone] = useState<string>("UTC");
+
+  // Detect user timezone on mount
+  useEffect(() => {
+    setUserTimezone(getUserTimezone());
+  }, []);
 
   const handleToggle = async () => {
     // Optimistic update - update UI immediately
@@ -29,6 +36,9 @@ export default function SupplementCard({
     setIsTaken(!isTaken);
 
     try {
+      // Convert date string to timestamp for the user's timezone
+      const takenAtTimestamp = createTimestampForDate(date, userTimezone);
+
       const response = await fetch("/api/supplements/adherence/toggle", {
         method: "POST",
         headers: {
@@ -37,7 +47,7 @@ export default function SupplementCard({
         body: JSON.stringify({
           supplement_id: supplement.id,
           schedule_id: scheduleId,
-          taken_at: date,
+          taken_at: takenAtTimestamp,
         }),
       });
 
@@ -81,9 +91,22 @@ export default function SupplementCard({
             />
           </div>
           <div className="flex-1 grid grid-cols-4 justify-items-start items-center gap-1 min-w-0">
-            <h3 className="font-medium text-gray-900 truncate">
-              {supplement.name}
-            </h3>
+            <div className="flex flex-col">
+              <h3 className="font-medium text-gray-900 truncate">
+                {supplement.name}
+              </h3>
+              {/* Show schedule indicator if supplement has multiple schedules for this time */}
+              {supplement.supplement_schedules &&
+                supplement.supplement_schedules.length > 1 && (
+                  <span className="text-xs text-gray-500">
+                    Dose{" "}
+                    {supplement.supplement_schedules.findIndex(
+                      (s) => s.id === scheduleId
+                    ) + 1}{" "}
+                    of {supplement.supplement_schedules.length}
+                  </span>
+                )}
+            </div>
 
             {/* Quantity Badge */}
             <span className="px-1.5 bg-blue-600 justify-self-center text-white font-medium rounded-lg">

@@ -1,4 +1,21 @@
-import { SupplementInput } from "@/lib/supplements";
+import { Database } from "../supabase/database.types";
+
+// Database Types
+export type TimeOfDay = Database["public"]["Enums"]["time_of_day"];
+export type SupplementStatus = Database["public"]["Enums"]["supplement_status"];
+
+// Input Types
+export interface SupplementInput {
+  name: string;
+  capsules_per_take: number;
+  time_of_day: TimeOfDay[];
+  recommendation?: string;
+  source_url?: string;
+  source_name?: string;
+  start_date: string;
+  end_date?: string;
+  reason?: string;
+}
 
 // API Response Types
 export interface CreateSupplementResponse {
@@ -30,6 +47,7 @@ export interface CreateSupplementResponse {
 
 export interface TodaySupplementsResponse {
   date: string;
+  timezone: string;
   supplements: Supplement[];
 }
 
@@ -56,40 +74,20 @@ export interface ApiError {
   details?: string | string[];
 }
 
-// API Client Functions
-export async function createSupplement(
-  data: SupplementInput
-): Promise<CreateSupplementResponse> {
-  const response = await fetch("/api/supplements/create", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify(data),
-  });
-
-  if (!response.ok) {
-    const errorData: ApiError = await response.json();
-    throw new Error(errorData.message || "Failed to create supplement");
-  }
-
-  return response.json();
+// Validation Types
+export interface ValidationResult {
+  valid: boolean;
+  errors?: string[];
 }
 
-export async function getTodaySupplements(
-  date?: string
-): Promise<TodaySupplementsResponse> {
-  const url = new URL("/api/supplements/today", window.location.origin);
-  if (date) {
-    url.searchParams.set("date", date);
-  }
+// Component Props Types
+export interface SupplementCardProps {
+  supplement: Supplement;
+  scheduleId: string;
+  date: string;
+}
 
-  const response = await fetch(url.toString());
-
-  if (!response.ok) {
-    const errorData: ApiError = await response.json();
-    throw new Error(errorData.message || "Failed to fetch today's supplements");
-  }
-
-  return response.json();
+export interface SupplementsSectionProps {
+  supplements: Supplement[];
+  date: string;
 }

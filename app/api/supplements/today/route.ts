@@ -1,6 +1,10 @@
-import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
-import { getTodayDate, isValidDateString } from "@/lib/supplements";
+import {
+  formatTimestampToDate,
+  getDateRangeTimestamps,
+  isValidDateString,
+} from "@/lib/utils/timezone";
+import { NextRequest, NextResponse } from "next/server";
 
 export async function GET(request: NextRequest) {
   try {
@@ -18,10 +22,14 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // Get date from query params or use today
+    // Get date and timezone from query params
     const { searchParams } = new URL(request.url);
     const dateParam = searchParams.get("date");
-    const targetDate = dateParam || getTodayDate();
+    const timezoneParam = searchParams.get("timezone") || "UTC";
+
+    // Use provided date or calculate today in user's timezone
+    const targetDate =
+      dateParam || formatTimestampToDate(new Date(), timezoneParam);
 
     // Validate date format
     if (!isValidDateString(targetDate)) {
@@ -34,7 +42,14 @@ export async function GET(request: NextRequest) {
       );
     }
 
+    // Get the date range for filtering (start and end of day in user's timezone)
+    const [startOfDay, endOfDay] = getDateRangeTimestamps(
+      targetDate,
+      timezoneParam
+    );
+
     // Get all active supplements for the user that should be active today
+    // Now using timestamp comparison with timezone-aware date ranges
     const { data: supplements, error: supplementsError } = await supabase
       .from("supplements")
       .select(
@@ -56,8 +71,8 @@ export async function GET(request: NextRequest) {
       .eq("user_id", user.id)
       .eq("status", "ACTIVE")
       .is("deleted_at", null)
-      .lte("start_date", targetDate)
-      .or(`end_date.is.null,end_date.gte.${targetDate}`);
+      .lte("start_date", endOfDay)
+      .or(`end_date.is.null,end_date.gte.${startOfDay}`);
 
     if (supplementsError) {
       console.error("Error fetching supplements:", supplementsError);
@@ -73,6 +88,7 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({
       date: targetDate,
+      timezone: timezoneParam,
       supplements: supplements || [],
     });
   } catch (error) {

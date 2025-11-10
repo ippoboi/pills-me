@@ -1,17 +1,17 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import {
-  createSupplement,
-  getTodaySupplements,
-  type CreateSupplementResponse,
-  type TodaySupplementsResponse,
-} from "@/lib/api/supplements";
-import { SupplementInput } from "@/lib/supplements";
+import { createSupplement } from "../mutations/supplements";
+import { getTodaySupplements } from "../queries/supplements";
+import { getUserTimezone } from "../utils/timezone";
+import { supplementsKeys } from "../queries/keys";
+import type {
+  CreateSupplementResponse,
+  TodaySupplementsResponse,
+  SupplementInput,
+} from "../types";
 
-// Query Keys
-export const supplementsKeys = {
-  all: ["supplements"] as const,
-  today: (date?: string) => ["supplements", "today", date] as const,
-};
+/**
+ * React Query hooks for supplement operations
+ */
 
 // Create Supplement Mutation Hook
 export function useCreateSupplement() {
@@ -50,10 +50,12 @@ export function useCreateSupplement() {
 }
 
 // Today's Supplements Query Hook
-export function useTodaySupplements(date?: string) {
+export function useTodaySupplements(date?: string, timezone?: string) {
+  const userTimezone = timezone || getUserTimezone();
+
   return useQuery<TodaySupplementsResponse, Error>({
-    queryKey: supplementsKeys.today(date),
-    queryFn: () => getTodaySupplements(date),
+    queryKey: supplementsKeys.today(date, userTimezone),
+    queryFn: () => getTodaySupplements(date, userTimezone),
     staleTime: 5 * 60 * 1000, // 5 minutes
     refetchOnWindowFocus: true, // Refetch when user returns to tab
   });
