@@ -86,6 +86,11 @@ export async function GET(request: NextRequest) {
     // For each supplement, calculate adherence stats
     const supplementsWithStats = await Promise.all(
       (supplements || []).map(async (supplement) => {
+        const toISODate = (d: Date) =>
+          new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()))
+            .toISOString()
+            .slice(0, 10);
+
         // Calculate days since start
         const startDate = new Date(supplement.start_date);
         const endDate = supplement.end_date
@@ -115,13 +120,20 @@ export async function GET(request: NextRequest) {
           .from("supplement_adherence")
           .select("*", { count: "exact", head: true })
           .eq("supplement_id", supplement.id)
-          .eq("user_id", user.id);
+          .eq("user_id", user.id)
+          .gte("taken_at", toISODate(startDate))
+          .lte("taken_at", toISODate(calculationEndDate));
 
         if (countError) {
           console.error("Error counting adherence:", countError);
         }
 
         const actualAdherence = adherenceCount || 0;
+        const adherencePercentage =
+          totalPossibleDoses > 0
+            ? Math.round((actualAdherence / totalPossibleDoses) * 100)
+            : 0;
+        const periodType = supplement.end_date ? "PERIOD" : "STARTED";
 
         return {
           id: supplement.id,
@@ -135,8 +147,15 @@ export async function GET(request: NextRequest) {
               id: s.id,
               time_of_day: s.time_of_day,
             })) || [],
-          days_tracked: daysDiff,
-          days_completed: actualAdherence,
+          // UI helpers for list view
+          period_type: periodType as "PERIOD" | "STARTED",
+          day_number: daysDiff, // "Day N" badge (inclusive)
+          schedules_per_day: schedulesPerDay,
+          adherence: {
+            total_possible: totalPossibleDoses,
+            completed: actualAdherence,
+            percentage: adherencePercentage,
+          },
         };
       })
     );

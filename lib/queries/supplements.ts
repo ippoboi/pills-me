@@ -1,9 +1,13 @@
-import type { TodaySupplementsResponse, ApiError } from "../types";
+import type {
+  TodaySupplementsResponse,
+  ApiError,
+  SupplementStatus,
+  SupplementsListResponse,
+} from "../types";
 
 /**
- * Query functions for supplement operations (API calls)
+ * Query functions for today's supplements
  */
-
 export async function getTodaySupplements(
   date?: string,
   timezone?: string
@@ -23,5 +27,22 @@ export async function getTodaySupplements(
     throw new Error(errorData.message || "Failed to fetch today's supplements");
   }
 
+  return response.json();
+}
+
+/**
+ * Query functions for supplements list (overview)
+ */
+export async function getSupplementsList(
+  status?: SupplementStatus | null
+): Promise<SupplementsListResponse> {
+  const url = new URL("/api/supplements/list", window.location.origin);
+  if (status) url.searchParams.set("status", status);
+
+  const response = await fetch(url.toString());
+  if (!response.ok) {
+    const errorData: ApiError = await response.json();
+    throw new Error(errorData.message || "Failed to fetch supplements list");
+  }
   return response.json();
 }

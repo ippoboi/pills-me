@@ -94,10 +94,6 @@ export default function ProtectedPage() {
     }
   };
 
-  if (!userId) {
-    return null;
-  }
-
   // Check if we have supplements data
   const hasSupplements = todayData && todayData.supplements.length > 0;
 

@@ -10,6 +10,7 @@ import {
 import { Supplement } from "@/lib/types";
 import { Checkbox } from "@/components/ui/checkbox";
 import { getUserTimezone, createTimestampForDate } from "@/lib/utils/timezone";
+import { cn } from "@/lib/utils";
 
 interface SupplementCardProps {
   supplement: Supplement;
@@ -79,7 +80,12 @@ export default function SupplementCard({
   };
 
   return (
-    <div className="bg-white p-3 rounded-3xl lg:cursor-pointer lg:hover:bg-gray-50 transition-colors">
+    <div
+      className={cn(
+        "bg-white p-3 rounded-3xl lg:cursor-pointer lg:hover:bg-gray-50 transition-colors",
+        isTaken && "opacity-60"
+      )}
+    >
       <div
         className="flex items-center justify-between gap-4"
         onClick={(e) => {

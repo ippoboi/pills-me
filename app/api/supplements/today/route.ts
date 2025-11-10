@@ -77,7 +77,8 @@ export async function GET(request: NextRequest) {
       .lte("start_date", endOfDay)
       .or(`end_date.is.null,end_date.gte.${startOfDay}`)
       .eq("supplement_schedules.supplement_adherence.user_id", user.id)
-      .eq("supplement_schedules.supplement_adherence.taken_at", targetDate);
+      .gte("supplement_schedules.supplement_adherence.taken_at", startOfDay)
+      .lt("supplement_schedules.supplement_adherence.taken_at", endOfDay);
 
     if (supplementsError) {
       console.error("Error fetching supplements:", supplementsError);

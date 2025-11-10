@@ -106,7 +106,7 @@ export function Navigation() {
                     });
                   });
                 }}
-                className="rounded-[16px] p-3 transition-colors text-gray-600 flex items-center justify-center"
+                className="rounded-[16px] p-3  transition-colors text-gray-600 flex items-center justify-center"
               >
                 {tab.icon ? (
                   <HugeiconsIcon icon={tab.icon} className="h-8 w-8" />

@@ -71,23 +71,16 @@ export function createTimestampForDate(
       throw new Error(`Invalid date string format: ${dateString}`);
     }
 
-    // Create date at midnight in the specified timezone
-    // We use a temporary date to get the timezone offset
+    // Just use the current time with the date part replaced
+    // This preserves the user's current timezone context
+    const now = new Date();
     const [year, month, day] = dateString.split("-").map(Number);
 
-    // Create a date object in local time, then adjust for timezone
-    const tempDate = new Date(year, month - 1, day, 0, 0, 0, 0);
+    // Create a new date with today's time but the target date
+    const targetDate = new Date(now);
+    targetDate.setFullYear(year, month - 1, day);
+    targetDate.setHours(0, 0, 0, 0);
 
-    // Get the timezone offset for this date in the target timezone
-    const utcDate = new Date(
-      tempDate.getTime() - tempDate.getTimezoneOffset() * 60000
-    );
-
-    // Format as ISO string but we need to account for the target timezone
-    // Use Intl.DateTimeFormat to create the correct timestamp
-    const targetDate = new Date(`${dateString}T00:00:00`);
-
-    // This is a simplified approach - for production, consider using a library like date-fns-tz
     return targetDate.toISOString();
   } catch (error) {
     console.error("Error creating timestamp for date:", error);

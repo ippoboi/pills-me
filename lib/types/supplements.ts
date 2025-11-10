@@ -92,3 +92,27 @@ export interface SupplementsSectionProps {
   supplements: Supplement[];
   date: string;
 }
+
+// -----------------------------------------------------------------------------
+// Supplements List (Overview) Types
+// -----------------------------------------------------------------------------
+
+export type PeriodType = "PERIOD" | "STARTED";
+
+export interface SupplementsListItem {
+  id: string;
+  name: string;
+  start_date: string;
+  end_date: string | null;
+  period_type: PeriodType;
+  day_number: number;
+  adherence: {
+    total_possible: number;
+    completed: number;
+    percentage: number;
+  };
+}
+
+export interface SupplementsListResponse {
+  supplements: SupplementsListItem[];
+}
