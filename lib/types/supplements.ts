@@ -66,6 +66,7 @@ export interface Supplement {
 export interface SupplementSchedule {
   id: string;
   time_of_day: string;
+  adherence_status?: boolean;
 }
 
 export interface ApiError {

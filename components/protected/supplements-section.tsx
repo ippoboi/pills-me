@@ -80,10 +80,11 @@ export default function SupplementsSection({
         const supplementsForTime = groupedSupplements[config.value] || [];
         if (supplementsForTime.length === 0) return null;
 
-        // Calculate taken/left counts
-        // TODO: This will need to be updated when adherence data is available
-        const taken = 0; // Placeholder
-        const left = supplementsForTime.length;
+        // Calculate taken/left counts based on actual adherence data
+        const taken = supplementsForTime.filter(
+          (supplement) => supplement.currentSchedule.adherence_status
+        ).length;
+        const left = supplementsForTime.length - taken;
 
         return (
           <div key={config.value} className="space-y-3 ">
@@ -97,8 +98,11 @@ export default function SupplementsSection({
                 />
                 <h2 className="font-medium">{config.label}</h2>
               </div>
-              <div className="text-blue-600">
-                {taken > 0 ? `${left} left ${taken} taken` : `${left} left`}
+              <div className="flex items-center gap-2">
+                <span className="text-blue-600">{left} left</span>
+                {taken > 0 && (
+                  <span className="text-gray-600">{taken} taken</span>
+                )}
               </div>
             </div>
 

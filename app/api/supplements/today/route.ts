@@ -64,7 +64,10 @@ export async function GET(request: NextRequest) {
         end_date,
         supplement_schedules (
           id,
-          time_of_day
+          time_of_day,
+          supplement_adherence!left (
+            id
+          )
         )
       `
       )
@@ -72,7 +75,9 @@ export async function GET(request: NextRequest) {
       .eq("status", "ACTIVE")
       .is("deleted_at", null)
       .lte("start_date", endOfDay)
-      .or(`end_date.is.null,end_date.gte.${startOfDay}`);
+      .or(`end_date.is.null,end_date.gte.${startOfDay}`)
+      .eq("supplement_schedules.supplement_adherence.user_id", user.id)
+      .eq("supplement_schedules.supplement_adherence.taken_at", targetDate);
 
     if (supplementsError) {
       console.error("Error fetching supplements:", supplementsError);
@@ -86,10 +91,26 @@ export async function GET(request: NextRequest) {
       );
     }
 
+    // Transform the data to include adherence status
+    const supplementsWithAdherence = (supplements || []).map(
+      (supplement: any) => ({
+        ...supplement,
+        supplement_schedules: supplement.supplement_schedules.map(
+          (schedule: any) => ({
+            id: schedule.id,
+            time_of_day: schedule.time_of_day,
+            adherence_status:
+              schedule.supplement_adherence &&
+              schedule.supplement_adherence.length > 0,
+          })
+        ),
+      })
+    );
+
     return NextResponse.json({
       date: targetDate,
       timezone: timezoneParam,
-      supplements: supplements || [],
+      supplements: supplementsWithAdherence,
     });
   } catch (error) {
     console.error("Unexpected error in today's schedule:", error);

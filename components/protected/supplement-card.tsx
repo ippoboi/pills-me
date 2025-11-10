@@ -22,13 +22,24 @@ export default function SupplementCard({
   scheduleId,
   date,
 }: SupplementCardProps) {
-  const [isTaken, setIsTaken] = useState(false);
+  // Find the current schedule's adherence status
+  const currentSchedule = supplement.supplement_schedules.find(
+    (schedule) => schedule.id === scheduleId
+  );
+  const initialTakenStatus = currentSchedule?.adherence_status || false;
+
+  const [isTaken, setIsTaken] = useState(initialTakenStatus);
   const [userTimezone, setUserTimezone] = useState<string>("UTC");
 
   // Detect user timezone on mount
   useEffect(() => {
     setUserTimezone(getUserTimezone());
   }, []);
+
+  // Update isTaken state when adherence status changes
+  useEffect(() => {
+    setIsTaken(initialTakenStatus);
+  }, [initialTakenStatus]);
 
   const handleToggle = async () => {
     // Optimistic update - update UI immediately

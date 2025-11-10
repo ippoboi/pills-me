@@ -122,11 +122,7 @@ export default function ProtectedPage() {
           <p className="text-red-600">
             Error loading supplements: {supplementsError.message}
           </p>
-          <Button
-            variant="default"
-            onClick={() => setIsFormOpen(true)}
-            className="mt-4"
-          >
+          <Button variant="default" onClick={() => setIsFormOpen(true)}>
             <HugeiconsIcon
               icon={Add01FreeIcons}
               strokeWidth={2}
