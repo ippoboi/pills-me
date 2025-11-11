@@ -15,6 +15,7 @@ export interface SupplementInput {
   start_date: string;
   end_date?: string;
   reason?: string;
+  inventory_total?: number;
 }
 
 // API Response Types
@@ -56,11 +57,12 @@ export interface Supplement {
   name: string;
   capsules_per_take: number;
   recommendation: string | null;
-  source_name: string | null;
-  source_url: string | null;
   start_date: string;
   end_date: string | null;
   supplement_schedules: SupplementSchedule[];
+  adherence_progress: {
+    percentage: number;
+  };
 }
 
 export interface SupplementSchedule {
@@ -106,6 +108,8 @@ export interface SupplementsListItem {
   end_date: string | null;
   period_type: PeriodType;
   day_number: number;
+  inventory_total: number | null;
+  low_inventory_threshold: number;
   adherence: {
     total_possible: number;
     completed: number;

@@ -28,7 +28,7 @@ export async function POST(request: NextRequest) {
     let body: ToggleAdherenceRequest;
     try {
       body = await request.json();
-    } catch (error) {
+    } catch {
       return NextResponse.json(
         { error: "Bad Request", message: "Invalid JSON in request body" },
         { status: 400 }
@@ -62,7 +62,7 @@ export async function POST(request: NextRequest) {
     // Verify user owns the supplement
     const { data: supplement, error: supplementError } = await supabase
       .from("supplements")
-      .select("id, capsules_per_take")
+      .select("id")
       .eq("id", body.supplement_id)
       .eq("user_id", user.id)
       .single();
@@ -137,6 +137,25 @@ export async function POST(request: NextRequest) {
         );
       }
 
+      // Increment inventory back when untoggling
+      const { data: supplementData } = await supabase
+        .from("supplements")
+        .select("capsules_per_take, inventory_total")
+        .eq("id", body.supplement_id)
+        .single();
+
+      if (
+        supplementData?.inventory_total !== null &&
+        supplementData?.inventory_total !== undefined
+      ) {
+        const newInventory =
+          supplementData.inventory_total + supplementData.capsules_per_take;
+        await supabase
+          .from("supplements")
+          .update({ inventory_total: newInventory })
+          .eq("id", body.supplement_id);
+      }
+
       is_taken = false;
     } else {
       // Create new adherence record (toggle on)
@@ -147,7 +166,6 @@ export async function POST(request: NextRequest) {
           supplement_id: body.supplement_id,
           schedule_id: body.schedule_id,
           taken_at: body.taken_at,
-          capsules_taken: supplement.capsules_per_take,
         })
         .select("id")
         .single();
@@ -162,6 +180,27 @@ export async function POST(request: NextRequest) {
           },
           { status: 500 }
         );
+      }
+
+      // Decrement inventory when marking as taken
+      const { data: supplementData } = await supabase
+        .from("supplements")
+        .select("capsules_per_take, inventory_total")
+        .eq("id", body.supplement_id)
+        .single();
+
+      if (
+        supplementData?.inventory_total !== null &&
+        supplementData?.inventory_total !== undefined
+      ) {
+        const newInventory = Math.max(
+          0,
+          supplementData.inventory_total - supplementData.capsules_per_take
+        );
+        await supabase
+          .from("supplements")
+          .update({ inventory_total: newInventory })
+          .eq("id", body.supplement_id);
       }
 
       is_taken = true;

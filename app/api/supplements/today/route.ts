@@ -4,6 +4,7 @@ import {
   getDateRangeTimestamps,
   isValidDateString,
 } from "@/lib/utils/timezone";
+import { calculateAdherenceProgress } from "@/lib/utils/supplements";
 import { NextRequest, NextResponse } from "next/server";
 
 export async function GET(request: NextRequest) {
@@ -58,8 +59,6 @@ export async function GET(request: NextRequest) {
         name,
         capsules_per_take,
         recommendation,
-        source_name,
-        source_url,
         start_date,
         end_date,
         supplement_schedules (
@@ -92,19 +91,50 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // Transform the data to include adherence status
-    const supplementsWithAdherence = (supplements || []).map(
-      (supplement: any) => ({
-        ...supplement,
-        supplement_schedules: supplement.supplement_schedules.map(
-          (schedule: any) => ({
+    // Transform the data to include adherence status and calculate day-based progress
+    interface SupplementScheduleData {
+      id: string;
+      time_of_day: string;
+      supplement_adherence?: Array<{ id: string }>;
+    }
+
+    interface SupplementData {
+      id: string;
+      name: string;
+      capsules_per_take: number;
+      recommendation: string | null;
+      start_date: string;
+      end_date: string | null;
+      supplement_schedules: SupplementScheduleData[];
+    }
+
+    const supplementsWithAdherence = await Promise.all(
+      (supplements || []).map(async (supplement: SupplementData) => {
+        const schedules = supplement.supplement_schedules.map(
+          (schedule: SupplementScheduleData) => ({
             id: schedule.id,
             time_of_day: schedule.time_of_day,
             adherence_status:
               schedule.supplement_adherence &&
               schedule.supplement_adherence.length > 0,
           })
-        ),
+        );
+
+        // Calculate adherence progress using global utility function
+        const adherence_progress = await calculateAdherenceProgress(
+          supabase,
+          supplement.id,
+          user.id,
+          supplement.start_date,
+          supplement.end_date,
+          targetDate
+        );
+
+        return {
+          ...supplement,
+          supplement_schedules: schedules,
+          adherence_progress,
+        };
       })
     );
 

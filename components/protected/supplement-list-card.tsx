@@ -1,9 +1,9 @@
 "use client";
 
-import { HugeiconsIcon } from "@hugeicons/react";
-import { Medicine02FreeIcons } from "@hugeicons/core-free-icons";
 import type { SupplementsListItem } from "@/lib/types";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { Medicine02FreeIcons } from "@hugeicons/core-free-icons";
+import { HugeiconsIcon } from "@hugeicons/react";
+import { ChevronRight } from "lucide-react";
 
 interface SupplementListCardProps {
   item: SupplementsListItem;

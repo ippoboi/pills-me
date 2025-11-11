@@ -4,7 +4,6 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { startAuthentication } from "@simplewebauthn/browser";
 import { Fingerprint, Loader2 } from "lucide-react";
-import { createClient } from "@/lib/supabase/client";
 import { HugeiconsIcon } from "@hugeicons/react";
 import {
   ComputerPhoneSyncFreeIcons,
@@ -68,8 +67,9 @@ export default function AuthPage() {
         return;
       }
       throw new Error("Passkey authentication failed");
-    } catch (e: any) {
-      setError(e?.message || "Authentication failed");
+    } catch (e: unknown) {
+      const errorMessage = e instanceof Error ? e.message : "Unknown error";
+      setError(errorMessage || "Authentication failed");
     } finally {
       setLoading(false);
     }
@@ -100,7 +100,7 @@ export default function AuthPage() {
           <button
             onClick={handleCreatePasskey}
             disabled={loading || lookingUpUser}
-            className="w-full h-10 rounded-xl bg-white text-slate-900 font-medium hover:bg-gray-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            className="w-full h-10 rounded-xl bg-white text-slate-900 font-medium hover:bg-gray-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
           >
             {loading ? (
               <Loader2 className="h-4 w-4 animate-spin" />

@@ -26,7 +26,7 @@ export async function POST(request: NextRequest) {
     let body: SupplementInput;
     try {
       body = await request.json();
-    } catch (error) {
+    } catch {
       return NextResponse.json(
         { error: "Bad Request", message: "Invalid JSON in request body" },
         { status: 400 }
@@ -60,6 +60,8 @@ export async function POST(request: NextRequest) {
         start_date: body.start_date,
         end_date: body.end_date || null,
         status: "ACTIVE",
+        inventory_total: body.end_date ? null : body.inventory_total || null,
+        low_inventory_threshold: body.end_date ? null : 10,
       })
       .select()
       .single();

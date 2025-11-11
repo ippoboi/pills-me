@@ -1,9 +1,11 @@
-import type { TimeOfDay, SupplementInput, ValidationResult } from "../types";
+import type { SupplementInput, TimeOfDay, ValidationResult } from "../types";
 
 /**
  * Validate supplement input data
  */
-export function validateSupplementInput(data: any): ValidationResult {
+export function validateSupplementInput(
+  data: SupplementInput
+): ValidationResult {
   const errors: string[] = [];
 
   // Required fields

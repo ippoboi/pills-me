@@ -66,7 +66,7 @@ CREATE TABLE supplement_adherence (
   user_id UUID NOT NULL REFERENCES auth.users(id),
   supplement_id UUID NOT NULL REFERENCES supplements(id),
   schedule_id UUID NOT NULL REFERENCES supplement_schedules(id),
-  taken_at DATE NOT NULL,
+  taken_at TIMESTAMPTZ NOT NULL, -- UTC timestamp for timezone-independent tracking
   marked_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   capsules_taken INTEGER NOT NULL,
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),

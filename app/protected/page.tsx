@@ -43,7 +43,6 @@ export default function ProtectedPage() {
     data: todayData,
     isLoading: supplementsLoading,
     error: supplementsError,
-    refetch: refetchSupplements,
   } = useTodaySupplements();
 
   // Debug logging

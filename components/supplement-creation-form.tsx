@@ -19,7 +19,7 @@ import {
 import { HugeiconsIcon } from "@hugeicons/react";
 import { ChevronsUpDown, Loader2 } from "lucide-react";
 import { AnimatePresence, motion, MotionConfig } from "motion/react";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import useMeasure from "react-use-measure";
 
 type TimeOfDay = Database["public"]["Enums"]["time_of_day"];
@@ -40,6 +40,8 @@ interface FormData {
   start_date: string;
   end_date: string;
   reason: string;
+  inventory_total: number;
+  period_type: string;
 }
 
 interface FormErrors {
@@ -49,6 +51,7 @@ interface FormErrors {
   start_date?: string;
   end_date?: string;
   source_url?: string;
+  inventory_total?: string;
 }
 
 export default function SupplementCreationForm({
@@ -62,6 +65,10 @@ export default function SupplementCreationForm({
   const [endDate, setEndDate] = useState<Date | undefined>();
   const [direction, setDirection] = useState(1);
   const [ref, bounds] = useMeasure();
+  const [startDateOpen, setStartDateOpen] = useState(false);
+  const [periodOpen, setPeriodOpen] = useState(false);
+  const [missedDays, setMissedDays] = useState<string[]>([]);
+  const [addDayOpen, setAddDayOpen] = useState(false);
 
   // Form state
   const [formData, setFormData] = useState<FormData>({
@@ -74,6 +81,8 @@ export default function SupplementCreationForm({
     start_date: "",
     end_date: "",
     reason: "",
+    inventory_total: 0,
+    period_type: "Indefinitely",
   });
 
   const [formErrors, setFormErrors] = useState<FormErrors>({});
@@ -92,9 +101,10 @@ export default function SupplementCreationForm({
   };
 
   // Validation functions
-  const validateField = (
+  const validateFieldWithData = (
     field: keyof FormData,
-    value: any
+    value: string | number | TimeOfDay[] | undefined,
+    formData: FormData
   ): string | undefined => {
     switch (field) {
       case "name":
@@ -142,8 +152,22 @@ export default function SupplementCreationForm({
           }
         }
         break;
+      case "inventory_total":
+        if (formData.period_type === "Indefinitely") {
+          if (!value || typeof value !== "number" || value < 0) {
+            return "Inventory must be a positive number";
+          }
+        }
+        break;
     }
     return undefined;
+  };
+
+  const validateField = (
+    field: keyof FormData,
+    value: string | number | TimeOfDay[] | undefined
+  ): string | undefined => {
+    return validateFieldWithData(field, value, formData);
   };
 
   const validateForm = (): boolean => {
@@ -183,18 +207,50 @@ export default function SupplementCreationForm({
     );
   };
 
+  // Check if we need backfill step
+  const needsBackfillStep = (): boolean => {
+    if (!formData.start_date) return false;
+
+    // Compare using UTC-normalized midnights to avoid timezone offsets
+    const startUtcMs = Date.parse(`${formData.start_date}T00:00:00Z`);
+    if (Number.isNaN(startUtcMs)) return false;
+
+    const now = new Date();
+    const todayUtcMs = Date.UTC(
+      now.getUTCFullYear(),
+      now.getUTCMonth(),
+      now.getUTCDate()
+    );
+
+    return startUtcMs < todayUtcMs;
+  };
+
+  const getTotalSteps = (): number => {
+    return needsBackfillStep() ? 3 : 2;
+  };
+
   // Check if entire form is valid for final submission
   const isFormValid = (): boolean => {
     return isStep1Valid() && isStep2Valid();
   };
 
-  const handleFieldChange = (field: keyof FormData, value: any) => {
-    setFormData((prev) => ({ ...prev, [field]: value }));
+  const handleFieldChange = useCallback(
+    (
+      field: keyof FormData,
+      value: string | number | TimeOfDay[] | undefined
+    ) => {
+      setFormData((prev) => {
+        const newFormData = { ...prev, [field]: value };
 
-    // Clear error for this field and validate inline
-    const error = validateField(field, value);
-    setFormErrors((prev) => ({ ...prev, [field]: error }));
-  };
+        // Clear error for this field and validate inline
+        const error = validateFieldWithData(field, value, newFormData);
+        setFormErrors((prevErrors) => ({ ...prevErrors, [field]: error }));
+
+        return newFormData;
+      });
+    },
+    []
+  );
 
   const handleTimeOfDayToggle = (time: TimeOfDay) => {
     const isCurrentlySelected = formData.time_of_day.includes(time);
@@ -215,6 +271,40 @@ export default function SupplementCreationForm({
     handleFieldChange("time_of_day", newTimes);
   };
 
+  const handlePeriodTypeChange = useCallback(
+    (periodType: string) => {
+      handleFieldChange("period_type", periodType);
+
+      if (periodType === "Indefinitely") {
+        handleFieldChange("end_date", "");
+        setEndDate(undefined);
+      } else if (periodType !== "Custom" && startDate) {
+        // Calculate end date based on period
+        const endDate = new Date(startDate);
+        switch (periodType) {
+          case "1 week":
+            endDate.setDate(endDate.getDate() + 7);
+            break;
+          case "2 weeks":
+            endDate.setDate(endDate.getDate() + 14);
+            break;
+          case "1 month":
+            endDate.setMonth(endDate.getMonth() + 1);
+            break;
+          case "2 months":
+            endDate.setMonth(endDate.getMonth() + 2);
+            break;
+          case "3 months":
+            endDate.setMonth(endDate.getMonth() + 3);
+            break;
+        }
+        setEndDate(endDate);
+        handleFieldChange("end_date", endDate.toISOString().split("T")[0]);
+      }
+    },
+    [handleFieldChange, startDate]
+  );
+
   const resetForm = () => {
     setFormData({
       name: "",
@@ -226,6 +316,8 @@ export default function SupplementCreationForm({
       start_date: "",
       end_date: "",
       reason: "",
+      inventory_total: 0,
+      period_type: "Indefinitely",
     });
     setFormErrors({});
     setStartDate(undefined);
@@ -249,9 +341,17 @@ export default function SupplementCreationForm({
         recommendation: formData.recommendation.trim() || undefined,
         source_url: formData.source_url.trim() || undefined,
         source_name: formData.source_name.trim() || undefined,
-        start_date: formData.start_date,
-        end_date: formData.end_date || undefined,
+        start_date: formData.start_date
+          ? new Date(formData.start_date + "T00:00:00").toISOString()
+          : "",
+        end_date: formData.end_date
+          ? new Date(formData.end_date + "T00:00:00").toISOString()
+          : undefined,
         reason: formData.reason.trim() || undefined,
+        inventory_total:
+          formData.period_type === "Indefinitely"
+            ? formData.inventory_total
+            : undefined,
       };
 
       console.log("Submitting supplement:", supplementData);
@@ -293,19 +393,42 @@ export default function SupplementCreationForm({
   // Sync dates with form data
   useEffect(() => {
     if (startDate) {
-      const dateString = startDate.toISOString().split("T")[0];
+      const dateString =
+        startDate.getFullYear() +
+        "-" +
+        String(startDate.getMonth() + 1).padStart(2, "0") +
+        "-" +
+        String(startDate.getDate()).padStart(2, "0");
       handleFieldChange("start_date", dateString);
+
+      // Recalculate end date if period type is set and not indefinite/custom
+      if (
+        formData.period_type !== "Indefinitely" &&
+        formData.period_type !== "Custom"
+      ) {
+        handlePeriodTypeChange(formData.period_type);
+      }
     }
-  }, [startDate]);
+  }, [
+    startDate,
+    formData.period_type,
+    handleFieldChange,
+    handlePeriodTypeChange,
+  ]);
 
   useEffect(() => {
     if (endDate) {
-      const dateString = endDate.toISOString().split("T")[0];
+      const dateString =
+        endDate.getFullYear() +
+        "-" +
+        String(endDate.getMonth() + 1).padStart(2, "0") +
+        "-" +
+        String(endDate.getDate()).padStart(2, "0");
       handleFieldChange("end_date", dateString);
     } else {
       handleFieldChange("end_date", "");
     }
-  }, [endDate]);
+  }, [endDate, handleFieldChange]);
 
   // Ensure end date is never before the start date if user changes start after picking end
   useEffect(() => {
@@ -370,9 +493,16 @@ export default function SupplementCreationForm({
                 />
                 <div
                   className={`h-1 flex-1 rounded-full ${
-                    currentStep === 2 ? "bg-blue-600" : "bg-gray-200"
+                    currentStep >= 2 ? "bg-blue-600" : "bg-gray-200"
                   }`}
                 />
+                {getTotalSteps() === 3 && (
+                  <div
+                    className={`h-1 flex-1 rounded-full ${
+                      currentStep >= 3 ? "bg-blue-600" : "bg-gray-200"
+                    }`}
+                  />
+                )}
               </div>
             </motion.div>
 
@@ -391,7 +521,7 @@ export default function SupplementCreationForm({
                 custom={direction}
                 className="p-6"
               >
-                {currentStep === 1 ? (
+                {currentStep === 1 && (
                   <div className="space-y-4">
                     <div>
                       <label className="block mb-1">Name</label>
@@ -413,6 +543,196 @@ export default function SupplementCreationForm({
                         </p>
                       )}
                     </div>
+
+                    <div className="flex flex-col md:flex-row gap-4">
+                      <div className="w-full">
+                        <label className="block mb-1">Start date</label>
+                        <Popover
+                          open={startDateOpen}
+                          onOpenChange={setStartDateOpen}
+                        >
+                          <PopoverTrigger asChild>
+                            <button
+                              disabled={createSupplementMutation.isPending}
+                              className={`w-full px-3 pr-12 h-10 border rounded-xl bg-zinc-50 focus:outline-none focus:ring-2 focus:ring-blue-500 text-left relative disabled:opacity-50 disabled:cursor-not-allowed ${
+                                formErrors.start_date
+                                  ? "border-red-300"
+                                  : "border-gray-100"
+                              }`}
+                            >
+                              <span
+                                className={
+                                  startDate ? "text-gray-900" : "text-gray-400"
+                                }
+                              >
+                                {startDate
+                                  ? formatDate(startDate)
+                                  : "Select a start date"}
+                              </span>
+                              <div className="pointer-events-none bg-white rounded-[10px] h-9 w-9 border border-gray-200 absolute right-0.5 top-1/2 -translate-y-1/2 flex items-center justify-center">
+                                <HugeiconsIcon
+                                  icon={Calendar04FreeIcons}
+                                  className="w-4 h-4 text-gray-400"
+                                  strokeWidth={2}
+                                />
+                              </div>
+                            </button>
+                          </PopoverTrigger>
+                          <PopoverContent className="w-auto p-0" align="start">
+                            <Calendar
+                              mode="single"
+                              selected={startDate}
+                              onSelect={(date) => {
+                                console.log("Calendar date selected:", date);
+                                if (date) {
+                                  const dateString =
+                                    date.getFullYear() +
+                                    "-" +
+                                    String(date.getMonth() + 1).padStart(
+                                      2,
+                                      "0"
+                                    ) +
+                                    "-" +
+                                    String(date.getDate()).padStart(2, "0");
+                                  console.log(
+                                    "Converted to date string:",
+                                    dateString
+                                  );
+                                  handleFieldChange("start_date", dateString);
+                                }
+                                setStartDate(date);
+                                setStartDateOpen(false);
+                              }}
+                            />
+                          </PopoverContent>
+                        </Popover>
+                        {formErrors.start_date && (
+                          <p className="text-red-500 text-sm mt-1">
+                            {formErrors.start_date}
+                          </p>
+                        )}
+                      </div>
+
+                      <div className="w-full">
+                        <label className="block mb-1">For</label>
+                        <div className="relative">
+                          <Popover
+                            open={periodOpen}
+                            onOpenChange={setPeriodOpen}
+                          >
+                            <PopoverTrigger asChild>
+                              <button
+                                disabled={createSupplementMutation.isPending}
+                                className="w-full px-3 pr-10 h-10 border border-gray-100 rounded-xl bg-zinc-50 focus:outline-none focus:ring-2 focus:ring-blue-500 text-left disabled:opacity-50 disabled:cursor-not-allowed"
+                              >
+                                <span className="text-gray-900">
+                                  {formData.period_type}
+                                </span>
+                                <div className="pointer-events-none bg-white rounded-[10px] h-9 w-9 border border-gray-200 absolute right-0.5 top-1/2 -translate-y-1/2 flex items-center justify-center">
+                                  <ChevronsUpDown className="w-5 h-5 text-gray-400" />
+                                </div>
+                              </button>
+                            </PopoverTrigger>
+                            <PopoverContent className="p-0" align="start">
+                              <div className="p-1 space-y-1">
+                                {[
+                                  "Indefinitely",
+                                  "1 week",
+                                  "2 weeks",
+                                  "1 month",
+                                  "2 months",
+                                  "3 months",
+                                  "Custom",
+                                ].map((period) => (
+                                  <button
+                                    key={period}
+                                    onClick={() => {
+                                      handlePeriodTypeChange(period);
+                                      setPeriodOpen(false);
+                                    }}
+                                    disabled={
+                                      createSupplementMutation.isPending
+                                    }
+                                    className="w-full text-left px-3 py-2 rounded-xl hover:bg-gray-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                  >
+                                    {period}
+                                  </button>
+                                ))}
+                              </div>
+                            </PopoverContent>
+                          </Popover>
+                        </div>
+                        {formData.period_type !== "Indefinitely" &&
+                          formData.period_type !== "Custom" &&
+                          endDate && (
+                            <p className="text-sm text-gray-500 mt-1">
+                              End date: {formatDate(endDate)}
+                            </p>
+                          )}
+                      </div>
+                    </div>
+
+                    {formData.period_type === "Custom" && (
+                      <div>
+                        <label className="block mb-1">End date</label>
+                        <Popover>
+                          <PopoverTrigger asChild>
+                            <button
+                              disabled={createSupplementMutation.isPending}
+                              className={`w-full px-3 pr-12 h-10 border rounded-xl bg-zinc-50 focus:outline-none focus:ring-2 focus:ring-blue-500 text-left relative disabled:opacity-50 disabled:cursor-not-allowed ${
+                                formErrors.end_date
+                                  ? "border-red-300"
+                                  : "border-gray-100"
+                              }`}
+                            >
+                              <span
+                                className={
+                                  endDate ? "text-gray-900" : "text-gray-400"
+                                }
+                              >
+                                {endDate
+                                  ? formatDate(endDate)
+                                  : "Select end date"}
+                              </span>
+                              <div className="pointer-events-none bg-white rounded-[10px] h-9 w-9 border border-gray-200 absolute right-0.5 top-1/2 -translate-y-1/2 flex items-center justify-center">
+                                <HugeiconsIcon
+                                  icon={Calendar04FreeIcons}
+                                  className="w-4 h-4 text-gray-400"
+                                  strokeWidth={2}
+                                />
+                              </div>
+                            </button>
+                          </PopoverTrigger>
+                          <PopoverContent className="w-auto p-0" align="start">
+                            <Calendar
+                              mode="single"
+                              selected={endDate}
+                              onSelect={(date) => {
+                                if (date) {
+                                  const dateString =
+                                    date.getFullYear() +
+                                    "-" +
+                                    String(date.getMonth() + 1).padStart(
+                                      2,
+                                      "0"
+                                    ) +
+                                    "-" +
+                                    String(date.getDate()).padStart(2, "0");
+                                  handleFieldChange("end_date", dateString);
+                                }
+                                setEndDate(date);
+                              }}
+                              initialFocus
+                            />
+                          </PopoverContent>
+                        </Popover>
+                        {formErrors.end_date && (
+                          <p className="text-red-500 text-sm mt-1">
+                            {formErrors.end_date}
+                          </p>
+                        )}
+                      </div>
+                    )}
 
                     <div className="flex flex-col md:flex-row gap-4">
                       <div className="w-full">
@@ -583,46 +903,97 @@ export default function SupplementCreationForm({
                       </div>
                     </div>
 
-                    <div>
-                      <label className="block mb-1">Capsules per take</label>
-                      <input
-                        type="number"
-                        value={formData.capsules_per_take}
-                        onChange={(e) => {
-                          const value = e.target.value;
-                          if (value === "") {
-                            // Don't update if empty, keep current value
-                            return;
+                    <div className="flex flex-col md:flex-row gap-4">
+                      <div className="w-full">
+                        <label className="block mb-1">Capsules per take</label>
+                        <input
+                          type="number"
+                          placeholder="Number of capsules"
+                          value={
+                            formData.capsules_per_take === 0
+                              ? ""
+                              : formData.capsules_per_take
                           }
-                          const numValue = parseInt(value);
-                          if (!isNaN(numValue) && numValue >= 1) {
-                            handleFieldChange("capsules_per_take", numValue);
-                          }
-                        }}
-                        onBlur={(e) => {
-                          // Ensure we always have at least 1 when field loses focus
-                          if (
-                            e.target.value === "" ||
-                            parseInt(e.target.value) < 1
-                          ) {
-                            handleFieldChange("capsules_per_take", 1);
-                          }
-                        }}
-                        min={1}
-                        disabled={createSupplementMutation.isPending}
-                        className={`w-full px-3 h-10 border rounded-xl bg-zinc-50 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed ${
-                          formErrors.capsules_per_take
-                            ? "border-red-300"
-                            : "border-gray-100"
-                        }`}
-                      />
-                      {formErrors.capsules_per_take && (
-                        <p className="text-red-500 text-sm mt-1">
-                          {formErrors.capsules_per_take}
-                        </p>
+                          onChange={(e) => {
+                            const value = e.target.value;
+                            if (value === "") {
+                              handleFieldChange("capsules_per_take", 0);
+                              return;
+                            }
+                            const numValue = parseInt(value);
+                            if (!isNaN(numValue) && numValue >= 0) {
+                              handleFieldChange("capsules_per_take", numValue);
+                            }
+                          }}
+                          onBlur={(e) => {
+                            // Ensure we always have at least 1 when field loses focus
+                            if (
+                              e.target.value === "" ||
+                              parseInt(e.target.value) < 1
+                            ) {
+                              handleFieldChange("capsules_per_take", 1);
+                            }
+                          }}
+                          min={1}
+                          disabled={createSupplementMutation.isPending}
+                          className={`w-full px-3 h-10 border rounded-xl bg-zinc-50 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed ${
+                            formErrors.capsules_per_take
+                              ? "border-red-300"
+                              : "border-gray-100"
+                          }`}
+                        />
+                        {formErrors.capsules_per_take && (
+                          <p className="text-red-500 text-sm mt-1">
+                            {formErrors.capsules_per_take}
+                          </p>
+                        )}
+                      </div>
+
+                      {formData.period_type === "Indefinitely" && (
+                        <div className="w-full">
+                          <label className="block mb-1">
+                            Capsules inventory
+                          </label>
+                          <input
+                            type="number"
+                            placeholder="Number of capsules"
+                            value={
+                              formData.inventory_total === 0
+                                ? ""
+                                : formData.inventory_total
+                            }
+                            onChange={(e) => {
+                              const value = e.target.value;
+                              if (value === "") {
+                                handleFieldChange("inventory_total", 0);
+                                return;
+                              }
+                              const numValue = parseInt(value);
+                              if (!isNaN(numValue) && numValue >= 0) {
+                                handleFieldChange("inventory_total", numValue);
+                              }
+                            }}
+                            min={0}
+                            disabled={createSupplementMutation.isPending}
+                            className={`w-full px-3 h-10 border rounded-xl bg-zinc-50 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed ${
+                              formErrors.inventory_total
+                                ? "border-red-300"
+                                : "border-gray-100"
+                            }`}
+                          />
+                          {formErrors.inventory_total && (
+                            <p className="text-red-500 text-sm mt-1">
+                              {formErrors.inventory_total}
+                            </p>
+                          )}
+                        </div>
                       )}
                     </div>
+                  </div>
+                )}
 
+                {currentStep === 2 && (
+                  <div className="space-y-4">
                     <div>
                       <label className="block mb-1">Recommendation</label>
                       <input
@@ -634,6 +1005,20 @@ export default function SupplementCreationForm({
                         }
                         disabled={createSupplementMutation.isPending}
                         className="w-full px-3 h-10 border border-gray-100 rounded-xl bg-zinc-50 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block mb-1">Reason</label>
+                      <textarea
+                        placeholder="Write the reason you are supplementing"
+                        rows={4}
+                        value={formData.reason}
+                        onChange={(e) =>
+                          handleFieldChange("reason", e.target.value)
+                        }
+                        disabled={createSupplementMutation.isPending}
+                        className="w-full px-3 py-2 border border-gray-100 rounded-xl bg-zinc-50 focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none disabled:opacity-50 disabled:cursor-not-allowed"
                       />
                     </div>
 
@@ -669,7 +1054,7 @@ export default function SupplementCreationForm({
                         )}
                         <input
                           type="text"
-                          placeholder="Display name"
+                          placeholder="Brand name"
                           value={formData.source_name}
                           onChange={(e) =>
                             handleFieldChange("source_name", e.target.value)
@@ -680,117 +1065,29 @@ export default function SupplementCreationForm({
                       </div>
                     </div>
                   </div>
-                ) : (
+                )}
+
+                {currentStep === 3 && (
                   <div className="space-y-4">
-                    <div className="flex flex-col md:flex-row gap-4">
-                      <div className="w-full">
-                        <label className="block mb-1">Start</label>
-                        <Popover>
-                          <PopoverTrigger asChild>
-                            <button
-                              disabled={createSupplementMutation.isPending}
-                              className={`w-full px-3 pr-12 h-10 border rounded-xl bg-zinc-50 focus:outline-none focus:ring-2 focus:ring-blue-500 text-left relative disabled:opacity-50 disabled:cursor-not-allowed ${
-                                formErrors.start_date
-                                  ? "border-red-300"
-                                  : "border-gray-100"
-                              }`}
-                            >
-                              <span
-                                className={
-                                  startDate ? "text-gray-900" : "text-gray-400"
-                                }
-                              >
-                                {startDate
-                                  ? formatDate(startDate)
-                                  : "Select start date"}
-                              </span>
-                              <div className="pointer-events-none bg-white rounded-[10px] h-9 w-9 border border-gray-200 absolute right-0.5 top-1/2 -translate-y-1/2 flex items-center justify-center">
-                                <HugeiconsIcon
-                                  icon={Calendar04FreeIcons}
-                                  className="w-4 h-4 text-gray-400"
-                                  strokeWidth={2}
-                                />
-                              </div>
-                            </button>
-                          </PopoverTrigger>
-                          <PopoverContent className="w-auto p-0" align="start">
-                            <Calendar
-                              mode="single"
-                              selected={startDate}
-                              onSelect={setStartDate}
-                              initialFocus
-                            />
-                          </PopoverContent>
-                        </Popover>
-                        {formErrors.start_date && (
-                          <p className="text-red-500 text-sm mt-1">
-                            {formErrors.start_date}
-                          </p>
-                        )}
+                    <div className="text-center space-y-2">
+                      <div className="w-16 h-16 bg-blue-100 rounded-2xl flex items-center justify-center mx-auto">
+                        <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center">
+                          <span className="text-white text-sm font-bold">
+                            !
+                          </span>
+                        </div>
                       </div>
-
-                      <div className="w-full">
-                        <label className="block mb-1">
-                          End (optional, if any)
-                        </label>
-                        <Popover>
-                          <PopoverTrigger asChild>
-                            <button
-                              disabled={createSupplementMutation.isPending}
-                              className={`w-full px-3 pr-12 h-10 border rounded-xl bg-zinc-50 focus:outline-none focus:ring-2 focus:ring-blue-500 text-left relative disabled:opacity-50 disabled:cursor-not-allowed ${
-                                formErrors.end_date
-                                  ? "border-red-300"
-                                  : "border-gray-100"
-                              }`}
-                            >
-                              <span
-                                className={
-                                  endDate ? "text-gray-900" : "text-gray-400"
-                                }
-                              >
-                                {endDate
-                                  ? formatDate(endDate)
-                                  : "Select end date"}
-                              </span>
-                              <div className="pointer-events-none bg-white rounded-[10px] h-9 w-9 border border-gray-200 absolute right-0.5 top-1/2 -translate-y-1/2 flex items-center justify-center">
-                                <HugeiconsIcon
-                                  icon={Calendar04FreeIcons}
-                                  className="w-4 h-4 text-gray-400"
-                                  strokeWidth={2}
-                                />
-                              </div>
-                            </button>
-                          </PopoverTrigger>
-                          <PopoverContent className="w-auto p-0" align="start">
-                            <Calendar
-                              mode="single"
-                              selected={endDate}
-                              onSelect={setEndDate}
-                              initialFocus
-                            />
-                          </PopoverContent>
-                        </Popover>
-                        {formErrors.end_date && (
-                          <p className="text-red-500 text-sm mt-1">
-                            {formErrors.end_date}
-                          </p>
-                        )}
-                      </div>
+                      <h3 className="text-xl font-semibold text-gray-900">
+                        Verify intake
+                      </h3>
                     </div>
-
-                    <div>
-                      <label className="block mb-1">Reason</label>
-                      <textarea
-                        placeholder="Write the reason you are supplementing"
-                        rows={4}
-                        value={formData.reason}
-                        onChange={(e) =>
-                          handleFieldChange("reason", e.target.value)
-                        }
-                        disabled={createSupplementMutation.isPending}
-                        className="w-full px-3 py-2 border border-gray-100 rounded-xl bg-zinc-50 focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none disabled:opacity-50 disabled:cursor-not-allowed"
-                      />
-                    </div>
+                    <Step3BackfillContent
+                      formData={formData}
+                      missedDays={missedDays}
+                      setMissedDays={setMissedDays}
+                      addDayOpen={addDayOpen}
+                      setAddDayOpen={setAddDayOpen}
+                    />
                   </div>
                 )}
               </motion.div>
@@ -809,13 +1106,16 @@ export default function SupplementCreationForm({
                   if (currentStep === 2) {
                     setDirection(-1);
                     setCurrentStep(1);
+                  } else if (currentStep === 3) {
+                    setDirection(-1);
+                    setCurrentStep(2);
                   } else {
                     onClose();
                   }
                 }}
                 disabled={createSupplementMutation.isPending}
               >
-                {currentStep === 2 ? "Back" : "Cancel"}
+                {currentStep === 2 || currentStep === 3 ? "Back" : "Cancel"}
               </Button>
               <Button
                 variant="default"
@@ -831,6 +1131,13 @@ export default function SupplementCreationForm({
                       setDirection(1);
                       setCurrentStep(2);
                     }
+                  } else if (currentStep === 2) {
+                    if (needsBackfillStep()) {
+                      setDirection(1);
+                      setCurrentStep(3);
+                    } else {
+                      handleSubmit();
+                    }
                   } else {
                     handleSubmit();
                   }
@@ -842,8 +1149,14 @@ export default function SupplementCreationForm({
                   </>
                 ) : currentStep === 1 ? (
                   "Next"
+                ) : currentStep === 2 ? (
+                  needsBackfillStep() ? (
+                    "Verify intake"
+                  ) : (
+                    "Add"
+                  )
                 ) : (
-                  "Add"
+                  "Confirm"
                 )}
               </Button>
             </motion.div>
@@ -853,6 +1166,107 @@ export default function SupplementCreationForm({
     </div>
   );
 }
+
+// Step 3 Backfill Content Component
+interface Step3BackfillContentProps {
+  formData: FormData;
+  missedDays: string[];
+  setMissedDays: (value: string[] | ((prev: string[]) => string[])) => void;
+  addDayOpen: boolean;
+  setAddDayOpen: (open: boolean) => void;
+}
+
+const Step3BackfillContent: React.FC<Step3BackfillContentProps> = ({
+  formData,
+  missedDays,
+  setMissedDays,
+  addDayOpen,
+  setAddDayOpen,
+}) => {
+  if (!formData.start_date) return null;
+
+  const startDate = new Date(formData.start_date + "T00:00:00");
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  const daysDiff = Math.floor(
+    (today.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)
+  );
+
+  if (daysDiff <= 0) return null;
+
+  return (
+    <div className="space-y-4">
+      <div className="text-center">
+        <p className="text-gray-600">
+          You have started <strong>{formData.name}</strong>{" "}
+          {daysDiff === 1 ? "one day" : `${daysDiff} days`} ago, but didn&apos;t
+          add it at that time. We have identified{" "}
+          <strong>{daysDiff} untracked days</strong>.
+        </p>
+      </div>
+
+      <div className="text-center">
+        <p className="text-gray-600">
+          Tell us which day you have missed. If you didn&apos;t miss any just
+          press the confirm button.
+        </p>
+      </div>
+
+      <div className="space-y-3">
+        <h4 className="font-medium text-gray-900">Add ONLY missed days</h4>
+        <div className="flex flex-wrap gap-2">
+          {missedDays.map((day, index) => (
+            <div
+              key={index}
+              className="bg-gray-100 rounded-lg px-3 py-2 flex items-center gap-2"
+            >
+              <span className="text-sm text-gray-700">{day}</span>
+              <button
+                onClick={() => {
+                  setMissedDays((prev) => prev.filter((_, i) => i !== index));
+                }}
+                className="text-gray-400 hover:text-gray-600"
+              >
+                ×
+              </button>
+            </div>
+          ))}
+          <Popover open={addDayOpen} onOpenChange={setAddDayOpen}>
+            <PopoverTrigger asChild>
+              <button className="border-2 border-dashed border-gray-300 rounded-lg px-4 py-2 text-gray-500 hover:border-gray-400 hover:text-gray-600 transition-colors flex items-center gap-2">
+                + Add day
+              </button>
+            </PopoverTrigger>
+            <PopoverContent className="w-auto p-0" align="start">
+              <Calendar
+                mode="single"
+                selected={undefined}
+                onSelect={(date) => {
+                  if (date) {
+                    const dateString = date.toLocaleDateString();
+                    // Only add if not already in the list
+                    if (!missedDays.includes(dateString)) {
+                      setMissedDays((prev) => [...prev, dateString]);
+                    }
+                    setAddDayOpen(false);
+                  }
+                }}
+                disabled={(date) => {
+                  // Disable future dates and today
+                  const today = new Date();
+                  today.setHours(0, 0, 0, 0);
+                  return date >= today;
+                }}
+                initialFocus
+              />
+            </PopoverContent>
+          </Popover>
+        </div>
+      </div>
+    </div>
+  );
+};
 
 const variants = {
   initial: (direction: number) => {

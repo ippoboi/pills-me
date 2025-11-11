@@ -77,14 +77,15 @@ export async function GET(
     // Fetch recent adherence history (last 30 days)
     const thirtyDaysAgo = new Date();
     thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-    const thirtyDaysAgoStr = thirtyDaysAgo.toISOString().split("T")[0];
+    // Convert to proper timestamp for TIMESTAMPTZ comparison
+    const thirtyDaysAgoTimestamp =
+      thirtyDaysAgo.toISOString().split("T")[0] + "T00:00:00Z";
 
     const { data: adherenceHistory, error: adherenceError } = await supabase
       .from("supplement_adherence")
       .select(
         `
         taken_at,
-        capsules_taken,
         marked_at,
         supplement_schedules!inner (
           time_of_day
@@ -93,7 +94,7 @@ export async function GET(
       )
       .eq("supplement_id", supplementId)
       .eq("user_id", user.id)
-      .gte("taken_at", thirtyDaysAgoStr)
+      .gte("taken_at", thirtyDaysAgoTimestamp)
       .order("taken_at", { ascending: false })
       .order("marked_at", { ascending: false });
 
@@ -132,9 +133,7 @@ export async function GET(
       recent_adherence:
         adherenceHistory?.map((adherence) => ({
           date: adherence.taken_at,
-          time_of_day:
-            (adherence.supplement_schedules as any)?.time_of_day || "",
-          capsules_taken: adherence.capsules_taken,
+          time_of_day: adherence.supplement_schedules?.time_of_day || "",
           marked_at: adherence.marked_at,
         })) || [],
     };
@@ -187,7 +186,7 @@ export async function PUT(
     let body: Partial<SupplementInput>;
     try {
       body = await request.json();
-    } catch (error) {
+    } catch {
       return NextResponse.json(
         { error: "Bad Request", message: "Invalid JSON in request body" },
         { status: 400 }

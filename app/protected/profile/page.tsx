@@ -1,7 +1,16 @@
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+
 export default function ProfilePage() {
   return (
     <div>
-      <h1>Profile</h1>
+      <Avatar>
+        <AvatarImage src="/avatar.jpg" />
+        <AvatarFallback>DD</AvatarFallback>
+      </Avatar>
+      <div>
+        <p>Hey,</p>
+        <h1>Dimitar</h1>
+      </div>
     </div>
   );
 }

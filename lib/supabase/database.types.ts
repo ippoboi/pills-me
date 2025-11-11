@@ -133,7 +133,6 @@ export type Database = {
       };
       supplement_adherence: {
         Row: {
-          capsules_taken: number;
           created_at: string;
           id: string;
           marked_at: string;
@@ -143,7 +142,6 @@ export type Database = {
           user_id: string;
         };
         Insert: {
-          capsules_taken: number;
           created_at?: string;
           id?: string;
           marked_at?: string;
@@ -153,7 +151,6 @@ export type Database = {
           user_id: string;
         };
         Update: {
-          capsules_taken?: number;
           created_at?: string;
           id?: string;
           marked_at?: string;

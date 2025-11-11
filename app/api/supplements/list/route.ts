@@ -93,9 +93,6 @@ export async function GET(request: NextRequest) {
 
         // Calculate days since start
         const startDate = new Date(supplement.start_date);
-        const endDate = supplement.end_date
-          ? new Date(supplement.end_date)
-          : new Date();
         const today = new Date();
 
         // Use the earlier of end_date or today for calculation
@@ -116,13 +113,17 @@ export async function GET(request: NextRequest) {
         const totalPossibleDoses = daysDiff * schedulesPerDay;
 
         // Get actual adherence count
+        // Convert dates to proper timestamp ranges for TIMESTAMPTZ comparison
+        const startTimestamp = toISODate(startDate) + "T00:00:00Z";
+        const endTimestamp = toISODate(calculationEndDate) + "T23:59:59.999Z";
+
         const { count: adherenceCount, error: countError } = await supabase
           .from("supplement_adherence")
           .select("*", { count: "exact", head: true })
           .eq("supplement_id", supplement.id)
           .eq("user_id", user.id)
-          .gte("taken_at", toISODate(startDate))
-          .lte("taken_at", toISODate(calculationEndDate));
+          .gte("taken_at", startTimestamp)
+          .lte("taken_at", endTimestamp);
 
         if (countError) {
           console.error("Error counting adherence:", countError);

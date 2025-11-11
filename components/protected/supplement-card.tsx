@@ -2,15 +2,12 @@
 
 import { useState, useEffect } from "react";
 import { HugeiconsIcon } from "@hugeicons/react";
-import {
-  Link05FreeIcons,
-  Medicine02FreeIcons,
-  Tick01FreeIcons,
-} from "@hugeicons/core-free-icons";
+import { Medicine02FreeIcons } from "@hugeicons/core-free-icons";
 import { Supplement } from "@/lib/types";
 import { Checkbox } from "@/components/ui/checkbox";
 import { getUserTimezone, createTimestampForDate } from "@/lib/utils/timezone";
 import { cn } from "@/lib/utils";
+import { getAdherenceColorClass } from "@/lib/utils/supplements";
 
 interface SupplementCardProps {
   supplement: Supplement;
@@ -138,27 +135,19 @@ export default function SupplementCard({
               <span>{supplement.recommendation || "—"}</span>
             </div>
 
-            {/* Source */}
-            {supplement.source_name && (
-              <div className="flex flex-col">
-                <span className="text-xs text-gray-600 uppercase tracking-wide">
-                  Source
-                </span>
-                <a
-                  href={supplement.source_url || "#"}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className=" hover:text-blue-700 flex items-center gap-1"
-                  onClick={(e) => e.stopPropagation()}
-                >
-                  {supplement.source_name}
-                  <HugeiconsIcon
-                    icon={Link05FreeIcons}
-                    className="w-3 h-3 text-blue-600"
-                  />
-                </a>
-              </div>
-            )}
+            {/* Adherence */}
+            <div className="flex flex-col">
+              <span className="text-xs text-gray-600 uppercase tracking-wide">
+                Adherence
+              </span>
+              <span
+                className={getAdherenceColorClass(
+                  supplement.adherence_progress.percentage
+                )}
+              >
+                {supplement.adherence_progress.percentage} %
+              </span>
+            </div>
           </div>
         </div>
 
