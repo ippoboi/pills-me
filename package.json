@@ -4,7 +4,8 @@
     "dev": "next dev --turbopack",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint ."
+    "lint": "eslint .",
+    "db-update": "npx supabase gen types typescript --project-id zqdcjkkxdekzhzgrshkf --schema public > lib/supabase/database.types.ts"
   },
   "dependencies": {
     "@hugeicons/core-free-icons": "^1.2.1",

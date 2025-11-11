@@ -1,77 +1,94 @@
 "use client";
 
 import type { SupplementsListItem } from "@/lib/types";
-import { Medicine02FreeIcons } from "@hugeicons/core-free-icons";
+import {
+  ArrowRight01FreeIcons,
+  ArrowUpRight03FreeIcons,
+  Medicine02FreeIcons,
+} from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
-import { ChevronRight } from "lucide-react";
+import Link from "next/link";
+
+type SupplementListItem = SupplementsListItem["items"][0];
 
 interface SupplementListCardProps {
-  item: SupplementsListItem;
+  item: SupplementListItem;
 }
 
 function formatDate(dateString: string) {
   const d = new Date(dateString);
-  return d.toLocaleDateString(undefined, {
-    year: "numeric",
-    month: "short",
-    day: "2-digit",
-  });
+  const month = d.toLocaleDateString("en-US", { month: "short" });
+  const day = d.getDate();
+  const year = d.getFullYear();
+  return `${month} ${day}, ${year}`;
 }
 
 export default function SupplementListCard({ item }: SupplementListCardProps) {
-  const periodLabel = item.period_type === "PERIOD" ? "PERIOD" : "STARTED";
-  const leftDate = formatDate(item.start_date);
-  const rightDate =
-    item.period_type === "PERIOD" && item.end_date
-      ? formatDate(item.end_date)
-      : null;
-
-  const percentage = Math.max(0, Math.min(100, item.adherence.percentage || 0));
+  const hasEndDate = item.end_date !== null;
+  const startDate = formatDate(item.start_date);
+  const endDate = item.end_date ? formatDate(item.end_date) : null;
 
   return (
-    <div className="bg-white flex items-center gap-4 p-4 rounded-3xl">
-      <div className="bg-blue-50 p-3 rounded-xl">
+    <div className="bg-white flex items-center gap-4 p-4 rounded-3xl hover:bg-gray-50 transition-colors cursor-pointer">
+      <div className="bg-blue-50 p-3 rounded-xl flex-shrink-0">
         <HugeiconsIcon
           icon={Medicine02FreeIcons}
           strokeWidth={2}
           className="w-6 h-6 text-blue-600"
         />
       </div>
-      <div className="grid grid-cols-[1fr_max-content_max-content_max-content_max-content] justify-items-start w-full items-center gap-4">
-        {/* Left: Icon */}
+      <div className="grid grid-cols-[200px_250px_auto_auto] items-center gap-6 w-full min-w-0">
+        {/* Name */}
         <h3 className="font-medium text-gray-900 truncate min-w-0">
           {item.name}
         </h3>
 
-        {/* Middle: Title + Period */}
-        <div className="min-w-[250px]">
-          <div className="text-xs text-gray-500 uppercase tracking-wide">
-            {periodLabel}
-          </div>
-          <div className="text-gray-700">
-            {leftDate}
-            {rightDate ? <span> → {rightDate}</span> : null}
-          </div>
+        {/* Period/Start Date */}
+        <div className="text-gray-700 h-12 flex flex-col justify-between self-start whitespace-nowrap">
+          <p className="uppercase text-sm text-gray-500">
+            {hasEndDate && endDate ? "Period" : "Started on"}
+          </p>
+          {hasEndDate && endDate ? (
+            <span>
+              {startDate} → {endDate}
+            </span>
+          ) : (
+            <span>{startDate}</span>
+          )}
         </div>
 
-        {/* Right: Day badge + progress */}
-        <span className="px-1.5 bg-blue-600 justify-self-center text-white font-medium rounded-lg">
-          Day {item.day_number}
-        </span>
-
-        <div className="flex items-center justify-center gap-3 min-w-[180px]">
-          <div className="w-24 h-1.5 bg-gray-200 rounded-full overflow-hidden">
-            <div
-              className="h-full bg-blue-600 rounded-full"
-              style={{ width: `${percentage}%` }}
-            />
+        {/* Source */}
+        {item.source_name ? (
+          <div className="h-12 flex flex-col justify-between text-gray-600 whitespace-nowrap">
+            <p className="uppercase text-sm text-gray-500">Source</p>
+            {item.source_url ? (
+              <Link
+                href={item.source_url}
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={(e) => e.stopPropagation()}
+                className="flex items-center gap-1 hover:text-blue-600 transition-colors"
+              >
+                <span>{item.source_name}</span>
+                <HugeiconsIcon
+                  icon={ArrowUpRight03FreeIcons}
+                  width={16}
+                  height={16}
+                  strokeWidth={2}
+                  className="text-blue-600"
+                />
+              </Link>
+            ) : (
+              <span className="text-sm">{item.source_name}</span>
+            )}
           </div>
-          <span className="text-blue-600 font-medium">{percentage}%</span>
-        </div>
+        ) : (
+          <div></div>
+        )}
 
-        {/* Right side: Checkbox */}
-        <div className="p-3 flex items-center col-span-1 justify-end">
-          <ChevronRight className="w-6 h-6 text-gray-500" />
+        {/* Right Arrow */}
+        <div className="flex items-center pr-2 justify-end">
+          <HugeiconsIcon icon={ArrowRight01FreeIcons} width={20} height={20} />
         </div>
       </div>
     </div>

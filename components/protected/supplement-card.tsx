@@ -4,11 +4,7 @@ import { useState, useEffect } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { Medicine02FreeIcons } from "@hugeicons/core-free-icons";
-import {
-  Supplement,
-  TodaySupplementsResponse,
-  SupplementsListResponse,
-} from "@/lib/types";
+import { Supplement, TodaySupplementsResponse } from "@/lib/types";
 import { Checkbox } from "@/components/ui/checkbox";
 import { getUserTimezone } from "@/lib/utils/timezone";
 import { cn } from "@/lib/utils";
@@ -63,39 +59,20 @@ export default function SupplementCard({
           (oldData: TodaySupplementsResponse | undefined) => {
             if (!oldData) return oldData;
 
-            // Try to read list cache to compute optimistic adherence percentage
-            const listCache =
-              queryClient.getQueryData<SupplementsListResponse>([
-                "supplements",
-                "list",
-                "all",
-              ]) ||
-              queryClient.getQueryData<SupplementsListResponse>([
-                "supplements",
-                "list",
-                "ACTIVE",
-              ]);
-
-            const listItem = listCache?.supplements.find(
-              (x) => x.id === supplement.id
+            // Calculate optimistic adherence percentage
+            const delta = nextIsTaken ? 1 : -1;
+            const nextCompleted = Math.max(
+              0,
+              Math.min(
+                supplement.adherence_progress.total_possible,
+                supplement.adherence_progress.completed + delta
+              )
             );
-
-            const nextPercentage = (() => {
-              if (!listItem) return supplement.adherence_progress.percentage;
-              const delta = nextIsTaken ? 1 : -1;
-              const nextCompleted = Math.max(
-                0,
-                Math.min(
-                  listItem.adherence.total_possible,
-                  listItem.adherence.completed + delta
-                )
-              );
-              return Math.round(
-                (nextCompleted /
-                  Math.max(1, listItem.adherence.total_possible)) *
-                  100
-              );
-            })();
+            const nextPercentage = Math.round(
+              (nextCompleted /
+                Math.max(1, supplement.adherence_progress.total_possible)) *
+                100
+            );
 
             return {
               ...oldData,
@@ -108,7 +85,12 @@ export default function SupplementCard({
                       ? { ...sc, adherence_status: nextIsTaken }
                       : sc
                   ),
-                  adherence_progress: { percentage: nextPercentage },
+                  adherence_progress: {
+                    percentage: nextPercentage,
+                    completed: nextCompleted,
+                    total_possible:
+                      supplement.adherence_progress.total_possible,
+                  },
                 };
               }),
             };
@@ -119,43 +101,8 @@ export default function SupplementCard({
       updateTodayCache(supplementsKeys.today(date, userTimezone));
       updateTodayCache(supplementsKeys.today(undefined, userTimezone));
 
-      // Keep list view in sync optimistically as well
-      const updateListCache = (statusKey: string) => {
-        queryClient.setQueryData(
-          ["supplements", "list", statusKey],
-          (old: SupplementsListResponse | undefined) => {
-            if (!old) return old;
-            return {
-              ...old,
-              supplements: old.supplements.map((x) => {
-                if (x.id !== supplement.id) return x;
-                const delta = nextIsTaken ? 1 : -1;
-                const nextCompleted = Math.max(
-                  0,
-                  Math.min(
-                    x.adherence.total_possible,
-                    x.adherence.completed + delta
-                  )
-                );
-                const nextPerc = Math.round(
-                  (nextCompleted / Math.max(1, x.adherence.total_possible)) *
-                    100
-                );
-                return {
-                  ...x,
-                  adherence: {
-                    total_possible: x.adherence.total_possible,
-                    completed: nextCompleted,
-                    percentage: nextPerc,
-                  },
-                };
-              }),
-            };
-          }
-        );
-      };
-      updateListCache("all");
-      updateListCache("ACTIVE");
+      // Note: We don't update list cache optimistically since the new structure
+      // doesn't include adherence data - we'll rely on server invalidation
 
       const response = await fetch("/api/supplements/adherence/toggle", {
         method: "POST",

@@ -55,7 +55,7 @@ export async function calculateAdherenceProgress(
   endDate: string | null,
   referenceDate?: string,
   timezone: string = "UTC"
-): Promise<{ percentage: number }> {
+): Promise<{ percentage: number; completed: number; total_possible: number }> {
   console.log("🔍 [ADHERENCE DEBUG] Starting schedule-based calculation for:", {
     supplementId,
     userId,
@@ -94,18 +94,18 @@ export async function calculateAdherenceProgress(
       "❌ [ADHERENCE DEBUG] Invalid startDate format:",
       normalizedStartDate
     );
-    return { percentage: 0 };
+    return { percentage: 0, completed: 0, total_possible: 0 };
   }
   if (!dateRegex.test(today)) {
     console.error("❌ [ADHERENCE DEBUG] Invalid referenceDate format:", today);
-    return { percentage: 0 };
+    return { percentage: 0, completed: 0, total_possible: 0 };
   }
   if (normalizedEndDate && !dateRegex.test(normalizedEndDate)) {
     console.error(
       "❌ [ADHERENCE DEBUG] Invalid endDate format:",
       normalizedEndDate
     );
-    return { percentage: 0 };
+    return { percentage: 0, completed: 0, total_possible: 0 };
   }
 
   // Parse dates and validate they're valid
@@ -127,15 +127,15 @@ export async function calculateAdherenceProgress(
       "❌ [ADHERENCE DEBUG] Invalid startDate:",
       normalizedStartDate
     );
-    return { percentage: 0 };
+    return { percentage: 0, completed: 0, total_possible: 0 };
   }
   if (isNaN(todayObj.getTime())) {
     console.error("❌ [ADHERENCE DEBUG] Invalid referenceDate:", today);
-    return { percentage: 0 };
+    return { percentage: 0, completed: 0, total_possible: 0 };
   }
   if (endDateObj && isNaN(endDateObj.getTime())) {
     console.error("❌ [ADHERENCE DEBUG] Invalid endDate:", normalizedEndDate);
-    return { percentage: 0 };
+    return { percentage: 0, completed: 0, total_possible: 0 };
   }
 
   // Use the earlier of end_date or today for calculation
@@ -180,7 +180,7 @@ export async function calculateAdherenceProgress(
       "❌ [ADHERENCE DEBUG] Error fetching supplement schedules:",
       schedulesError
     );
-    return { percentage: 0 };
+    return { percentage: 0, completed: 0, total_possible: 0 };
   }
 
   const schedulesPerDay = supplementSchedules?.length || 0;
@@ -233,7 +233,7 @@ export async function calculateAdherenceProgress(
       "❌ [ADHERENCE DEBUG] Error fetching adherence records:",
       adherenceError
     );
-    return { percentage: 0 };
+    return { percentage: 0, completed: 0, total_possible: 0 };
   }
 
   const actualAdherence = adherenceCount || 0;
@@ -251,7 +251,11 @@ export async function calculateAdherenceProgress(
     calculation: `${actualAdherence}/${totalPossibleSchedules} * 100 = ${adherencePercentage}%`,
   });
 
-  return { percentage: adherencePercentage };
+  return {
+    percentage: adherencePercentage,
+    completed: actualAdherence,
+    total_possible: totalPossibleSchedules,
+  };
 }
 
 /**

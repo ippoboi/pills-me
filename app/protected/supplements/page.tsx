@@ -6,8 +6,7 @@ import { Add01FreeIcons } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { useState } from "react";
 import { useSupplementsList } from "@/lib/hooks/supplements";
-import SupplementListCard from "@/components/protected/supplement-list-card";
-import type { SupplementsListItem } from "@/lib/types";
+import SupplementsListSection from "@/components/protected/supplements-list-section";
 
 export default function SupplementsPage() {
   const [isFormOpen, setIsFormOpen] = useState(false);
@@ -39,15 +38,13 @@ export default function SupplementsPage() {
             onClose={() => setIsFormOpen(false)}
           />
 
-          <div className="space-y-1">
-            {isLoading && <div className="text-gray-500">Loading...</div>}
-            {error && (
-              <div className="text-red-600">Failed to load supplements.</div>
-            )}
-            {data?.supplements?.map((item: SupplementsListItem) => (
-              <SupplementListCard key={item.id} item={item} />
-            ))}
-          </div>
+          {isLoading && <div className="text-gray-500">Loading...</div>}
+          {error && (
+            <div className="text-red-600">Failed to load supplements.</div>
+          )}
+          {data?.supplements && (
+            <SupplementsListSection supplements={data.supplements} />
+          )}
         </div>
       </div>
     </div>

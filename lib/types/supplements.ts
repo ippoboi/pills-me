@@ -62,6 +62,8 @@ export interface Supplement {
   supplement_schedules: SupplementSchedule[];
   adherence_progress: {
     percentage: number;
+    completed: number;
+    total_possible: number;
   };
 }
 
@@ -99,22 +101,17 @@ export interface SupplementsSectionProps {
 // Supplements List (Overview) Types
 // -----------------------------------------------------------------------------
 
-export type PeriodType = "PERIOD" | "STARTED";
-
 export interface SupplementsListItem {
-  id: string;
-  name: string;
-  start_date: string;
-  end_date: string | null;
-  period_type: PeriodType;
-  day_number: number;
-  inventory_total: number | null;
-  low_inventory_threshold: number;
-  adherence: {
-    total_possible: number;
-    completed: number;
-    percentage: number;
-  };
+  status: SupplementStatus;
+  items: Array<{
+    id: string;
+    name: string;
+    start_date: string;
+    end_date: string | null;
+    created_at: string;
+    source_name: string | null;
+    source_url: string | null;
+  }>;
 }
 
 export interface SupplementsListResponse {
