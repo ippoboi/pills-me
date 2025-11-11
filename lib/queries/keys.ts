@@ -8,3 +8,7 @@ export const supplementsKeys = {
   today: (date?: string, timezone?: string) =>
     ["supplements", "today", date, timezone] as const,
 } as const;
+
+export const userKeys = {
+  current: ["user", "current"] as const,
+};
