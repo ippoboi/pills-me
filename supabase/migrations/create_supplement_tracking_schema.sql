@@ -14,8 +14,8 @@ CREATE TABLE supplements (
   reason VARCHAR(255),
   source_name VARCHAR(255),
   source_url TEXT,
-  start_date DATE NOT NULL,
-  end_date DATE,
+  start_date TIMESTAMPTZ NOT NULL,
+  end_date TIMESTAMPTZ,
   status supplement_status NOT NULL DEFAULT 'ACTIVE',
   deleted_at TIMESTAMPTZ,
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
@@ -68,7 +68,6 @@ CREATE TABLE supplement_adherence (
   schedule_id UUID NOT NULL REFERENCES supplement_schedules(id),
   taken_at TIMESTAMPTZ NOT NULL, -- UTC timestamp for timezone-independent tracking
   marked_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-  capsules_taken INTEGER NOT NULL,
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   
   -- Unique constraint to prevent duplicate entries for same dose
@@ -85,7 +84,6 @@ CREATE INDEX idx_adherence_user_supplement_date ON supplement_adherence(user_id,
 COMMENT ON TABLE supplement_adherence IS 'Historical tracking of when users mark doses as taken';
 COMMENT ON COLUMN supplement_adherence.taken_at IS 'The date this dose was for';
 COMMENT ON COLUMN supplement_adherence.marked_at IS 'Timestamp when user checked off the dose';
-COMMENT ON COLUMN supplement_adherence.capsules_taken IS 'Number of capsules taken - for future serving size tracking feature';
 
 -- ============================================================================
 -- USER PREFERENCES TABLE

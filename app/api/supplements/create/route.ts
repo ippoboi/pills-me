@@ -1,26 +1,23 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
 import { validateSupplementInput } from "@/lib/utils/validation";
 import { type SupplementInput } from "@/lib/types";
 import { Database } from "@/lib/supabase/database.types";
+import { authenticateRequest } from "@/lib/auth-helper";
 
 type TimeOfDay = Database["public"]["Enums"]["time_of_day"];
 
 export async function POST(request: NextRequest) {
   try {
-    const supabase = await createClient();
-
-    // Check authentication
-    const {
-      data: { user },
-      error: authError,
-    } = await supabase.auth.getUser();
-    if (authError || !user) {
+    // Authenticate using pm_session cookie
+    const auth = await authenticateRequest(request);
+    if (!auth) {
       return NextResponse.json(
         { error: "Unauthorized", message: "Authentication required" },
         { status: 401 }
       );
     }
+
+    const { userId, supabase } = auth;
 
     // Parse request body
     let body: SupplementInput;
@@ -50,7 +47,7 @@ export async function POST(request: NextRequest) {
     const { data: supplement, error: supplementError } = await supabase
       .from("supplements")
       .insert({
-        user_id: user.id,
+        user_id: userId,
         name: body.name.trim(),
         capsules_per_take: body.capsules_per_take,
         recommendation: body.recommendation?.trim() || null,

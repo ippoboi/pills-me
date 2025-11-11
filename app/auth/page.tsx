@@ -127,12 +127,6 @@ export default function AuthPage() {
             )}
           </button>
         </div>
-
-        {loading && (
-          <p className="text-sm text-white/80">
-            Confirm the prompt on your device to finish signing in.
-          </p>
-        )}
       </div>
 
       {/* Feature callouts */}

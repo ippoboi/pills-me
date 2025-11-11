@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { authenticateRequest } from "@/lib/auth-helper";
 
 interface RefillRequest {
   inventory_amount: number;
@@ -10,20 +10,16 @@ export async function POST(
   { params }: { params: { id: string } }
 ) {
   try {
-    const supabase = await createClient();
-
-    // Check authentication
-    const {
-      data: { user },
-      error: authError,
-    } = await supabase.auth.getUser();
-    if (authError || !user) {
+    // Authenticate using pm_session cookie
+    const auth = await authenticateRequest(request);
+    if (!auth) {
       return NextResponse.json(
         { error: "Unauthorized", message: "Authentication required" },
         { status: 401 }
       );
     }
 
+    const { userId, supabase } = auth;
     const supplementId = params.id;
 
     // Validate supplement ID format (basic UUID check)
@@ -67,7 +63,7 @@ export async function POST(
       .from("supplements")
       .select("id, name, inventory_total, end_date")
       .eq("id", supplementId)
-      .eq("user_id", user.id)
+      .eq("user_id", userId)
       .is("deleted_at", null)
       .single();
 

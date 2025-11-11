@@ -1,21 +1,18 @@
-import { NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { NextRequest, NextResponse } from "next/server";
+import { authenticateRequest } from "@/lib/auth-helper";
 
-export async function POST() {
+export async function POST(request: NextRequest) {
   try {
-    const supabase = await createClient();
-
-    // Check authentication
-    const {
-      data: { user },
-      error: authError,
-    } = await supabase.auth.getUser();
-    if (authError || !user) {
+    // Authenticate using pm_session cookie
+    const auth = await authenticateRequest(request);
+    if (!auth) {
       return NextResponse.json(
         { error: "Unauthorized", message: "Authentication required" },
         { status: 401 }
       );
     }
+
+    const { userId, supabase } = auth;
 
     // Get current date in YYYY-MM-DD format
     const today = new Date().toISOString().split("T")[0];
@@ -24,7 +21,7 @@ export async function POST() {
     const { data: expiredSupplements, error: fetchError } = await supabase
       .from("supplements")
       .select("id, name, end_date")
-      .eq("user_id", user.id)
+      .eq("user_id", userId)
       .eq("status", "ACTIVE")
       .not("end_date", "is", null)
       .lt("end_date", today)

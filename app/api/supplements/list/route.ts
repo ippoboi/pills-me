@@ -1,24 +1,22 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
 import { Database } from "@/lib/supabase/database.types";
+import { calculateAdherenceProgress } from "@/lib/utils/supplements";
+import { authenticateRequest } from "@/lib/auth-helper";
 
 type SupplementStatus = Database["public"]["Enums"]["supplement_status"];
 
 export async function GET(request: NextRequest) {
   try {
-    const supabase = await createClient();
-
-    // Check authentication
-    const {
-      data: { user },
-      error: authError,
-    } = await supabase.auth.getUser();
-    if (authError || !user) {
+    // Authenticate using pm_session cookie
+    const auth = await authenticateRequest(request);
+    if (!auth) {
       return NextResponse.json(
         { error: "Unauthorized", message: "Authentication required" },
         { status: 401 }
       );
     }
+
+    const { userId, supabase } = auth;
 
     // Get status filter from query params
     const { searchParams } = new URL(request.url);
@@ -60,7 +58,7 @@ export async function GET(request: NextRequest) {
         )
       `
       )
-      .eq("user_id", user.id)
+      .eq("user_id", userId)
       .is("deleted_at", null)
       .order("created_at", { ascending: false });
 
@@ -91,17 +89,25 @@ export async function GET(request: NextRequest) {
             .toISOString()
             .slice(0, 10);
 
-        // Calculate days since start
+        // Use the centralized adherence calculation utility
+        const adherence_progress = await calculateAdherenceProgress(
+          supabase,
+          supplement.id,
+          userId,
+          supplement.start_date,
+          supplement.end_date,
+          undefined, // Use today as reference date
+          "UTC" // Default to UTC for list view
+        );
+
+        // Calculate total possible doses for the adherence object
         const startDate = new Date(supplement.start_date);
         const today = new Date();
-
-        // Use the earlier of end_date or today for calculation
         const calculationEndDate =
           supplement.end_date && new Date(supplement.end_date) < today
             ? new Date(supplement.end_date)
             : today;
 
-        // Calculate total possible doses
         const daysDiff = Math.max(
           0,
           Math.floor(
@@ -112,8 +118,8 @@ export async function GET(request: NextRequest) {
         const schedulesPerDay = supplement.supplement_schedules?.length || 0;
         const totalPossibleDoses = daysDiff * schedulesPerDay;
 
-        // Get actual adherence count
-        // Convert dates to proper timestamp ranges for TIMESTAMPTZ comparison
+        // Get actual adherence count for the adherence object
+
         const startTimestamp = toISODate(startDate) + "T00:00:00Z";
         const endTimestamp = toISODate(calculationEndDate) + "T23:59:59.999Z";
 
@@ -121,7 +127,7 @@ export async function GET(request: NextRequest) {
           .from("supplement_adherence")
           .select("*", { count: "exact", head: true })
           .eq("supplement_id", supplement.id)
-          .eq("user_id", user.id)
+          .eq("user_id", userId)
           .gte("taken_at", startTimestamp)
           .lte("taken_at", endTimestamp);
 
@@ -130,10 +136,7 @@ export async function GET(request: NextRequest) {
         }
 
         const actualAdherence = adherenceCount || 0;
-        const adherencePercentage =
-          totalPossibleDoses > 0
-            ? Math.round((actualAdherence / totalPossibleDoses) * 100)
-            : 0;
+        const adherencePercentage = adherence_progress.percentage;
         const periodType = supplement.end_date ? "PERIOD" : "STARTED";
 
         return {

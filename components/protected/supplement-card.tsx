@@ -1,13 +1,20 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { Medicine02FreeIcons } from "@hugeicons/core-free-icons";
-import { Supplement } from "@/lib/types";
+import {
+  Supplement,
+  TodaySupplementsResponse,
+  SupplementsListResponse,
+} from "@/lib/types";
 import { Checkbox } from "@/components/ui/checkbox";
-import { getUserTimezone, createTimestampForDate } from "@/lib/utils/timezone";
+import { getUserTimezone } from "@/lib/utils/timezone";
 import { cn } from "@/lib/utils";
 import { getAdherenceColorClass } from "@/lib/utils/supplements";
+
+import { supplementsKeys } from "@/lib/queries/keys";
 
 interface SupplementCardProps {
   supplement: Supplement;
@@ -20,6 +27,9 @@ export default function SupplementCard({
   scheduleId,
   date,
 }: SupplementCardProps) {
+  // Access the QueryClient from React context
+  const queryClient = useQueryClient();
+
   // Find the current schedule's adherence status
   const currentSchedule = supplement.supplement_schedules.find(
     (schedule) => schedule.id === scheduleId
@@ -42,11 +52,110 @@ export default function SupplementCard({
   const handleToggle = async () => {
     // Optimistic update - update UI immediately
     const previousState = isTaken;
-    setIsTaken(!isTaken);
+    const nextIsTaken = !isTaken;
+    setIsTaken(nextIsTaken);
 
     try {
-      // Convert date string to timestamp for the user's timezone
-      const takenAtTimestamp = createTimestampForDate(date, userTimezone);
+      // Optimistically update today's cache (checkbox + X left + adherence %)
+      const updateTodayCache = (key: readonly unknown[]) => {
+        queryClient.setQueryData(
+          key,
+          (oldData: TodaySupplementsResponse | undefined) => {
+            if (!oldData) return oldData;
+
+            // Try to read list cache to compute optimistic adherence percentage
+            const listCache =
+              queryClient.getQueryData<SupplementsListResponse>([
+                "supplements",
+                "list",
+                "all",
+              ]) ||
+              queryClient.getQueryData<SupplementsListResponse>([
+                "supplements",
+                "list",
+                "ACTIVE",
+              ]);
+
+            const listItem = listCache?.supplements.find(
+              (x) => x.id === supplement.id
+            );
+
+            const nextPercentage = (() => {
+              if (!listItem) return supplement.adherence_progress.percentage;
+              const delta = nextIsTaken ? 1 : -1;
+              const nextCompleted = Math.max(
+                0,
+                Math.min(
+                  listItem.adherence.total_possible,
+                  listItem.adherence.completed + delta
+                )
+              );
+              return Math.round(
+                (nextCompleted /
+                  Math.max(1, listItem.adherence.total_possible)) *
+                  100
+              );
+            })();
+
+            return {
+              ...oldData,
+              supplements: oldData.supplements.map((s) => {
+                if (s.id !== supplement.id) return s;
+                return {
+                  ...s,
+                  supplement_schedules: s.supplement_schedules.map((sc) =>
+                    sc.id === scheduleId
+                      ? { ...sc, adherence_status: nextIsTaken }
+                      : sc
+                  ),
+                  adherence_progress: { percentage: nextPercentage },
+                };
+              }),
+            };
+          }
+        );
+      };
+      // Update both query variants: with date and without date (hook uses undefined date)
+      updateTodayCache(supplementsKeys.today(date, userTimezone));
+      updateTodayCache(supplementsKeys.today(undefined, userTimezone));
+
+      // Keep list view in sync optimistically as well
+      const updateListCache = (statusKey: string) => {
+        queryClient.setQueryData(
+          ["supplements", "list", statusKey],
+          (old: SupplementsListResponse | undefined) => {
+            if (!old) return old;
+            return {
+              ...old,
+              supplements: old.supplements.map((x) => {
+                if (x.id !== supplement.id) return x;
+                const delta = nextIsTaken ? 1 : -1;
+                const nextCompleted = Math.max(
+                  0,
+                  Math.min(
+                    x.adherence.total_possible,
+                    x.adherence.completed + delta
+                  )
+                );
+                const nextPerc = Math.round(
+                  (nextCompleted / Math.max(1, x.adherence.total_possible)) *
+                    100
+                );
+                return {
+                  ...x,
+                  adherence: {
+                    total_possible: x.adherence.total_possible,
+                    completed: nextCompleted,
+                    percentage: nextPerc,
+                  },
+                };
+              }),
+            };
+          }
+        );
+      };
+      updateListCache("all");
+      updateListCache("ACTIVE");
 
       const response = await fetch("/api/supplements/adherence/toggle", {
         method: "POST",
@@ -56,7 +165,8 @@ export default function SupplementCard({
         body: JSON.stringify({
           supplement_id: supplement.id,
           schedule_id: scheduleId,
-          taken_at: takenAtTimestamp,
+          date: date, // Just send "YYYY-MM-DD"
+          timezone: userTimezone, // "America/Los_Angeles"
         }),
       });
 
@@ -64,14 +174,46 @@ export default function SupplementCard({
         const data = await response.json();
         // Update with server response to ensure sync
         setIsTaken(data.is_taken);
+
+        // Invalidate in background (no await) - refetch will reconcile with server
+        queryClient.invalidateQueries({
+          queryKey: supplementsKeys.today(date, userTimezone),
+        });
+        queryClient.invalidateQueries({
+          queryKey: supplementsKeys.today(undefined, userTimezone),
+        });
+
+        // Also invalidate supplements list for consistency
+        queryClient.invalidateQueries({
+          queryKey: ["supplements", "list"],
+        });
       } else {
         // Revert on error
         setIsTaken(previousState);
+        // Rollback optimistic caches by invalidating (quick server-sync)
+        queryClient.invalidateQueries({
+          queryKey: supplementsKeys.today(date, userTimezone),
+        });
+        queryClient.invalidateQueries({
+          queryKey: supplementsKeys.today(undefined, userTimezone),
+        });
+        queryClient.invalidateQueries({
+          queryKey: ["supplements", "list"],
+        });
         console.error("Failed to toggle adherence");
       }
     } catch (error) {
       // Revert on error
       setIsTaken(previousState);
+      queryClient.invalidateQueries({
+        queryKey: supplementsKeys.today(date, userTimezone),
+      });
+      queryClient.invalidateQueries({
+        queryKey: supplementsKeys.today(undefined, userTimezone),
+      });
+      queryClient.invalidateQueries({
+        queryKey: ["supplements", "list"],
+      });
       console.error("Failed to toggle adherence:", error);
     }
   };

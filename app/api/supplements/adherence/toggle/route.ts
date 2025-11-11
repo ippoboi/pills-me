@@ -1,28 +1,29 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
-import { isValidTimestamp } from "@/lib/utils/timezone";
+import {
+  createUTCTimestampFromLocalDateTime,
+  isValidDateString,
+} from "@/lib/utils/timezone";
+import { authenticateRequest } from "@/lib/auth-helper";
 
 interface ToggleAdherenceRequest {
   supplement_id: string;
   schedule_id: string;
-  taken_at: string; // Now expects ISO timestamp string instead of date string
+  date: string; // Date in YYYY-MM-DD format
+  timezone: string; // IANA timezone identifier
 }
 
 export async function POST(request: NextRequest) {
   try {
-    const supabase = await createClient();
-
-    // Check authentication
-    const {
-      data: { user },
-      error: authError,
-    } = await supabase.auth.getUser();
-    if (authError || !user) {
+    // Authenticate using pm_session cookie
+    const auth = await authenticateRequest(request);
+    if (!auth) {
       return NextResponse.json(
         { error: "Unauthorized", message: "Authentication required" },
         { status: 401 }
       );
     }
+
+    const { userId, supabase } = auth;
 
     // Parse request body
     let body: ToggleAdherenceRequest;
@@ -36,24 +37,29 @@ export async function POST(request: NextRequest) {
     }
 
     // Validate required fields
-    if (!body.supplement_id || !body.schedule_id || !body.taken_at) {
+    if (
+      !body.supplement_id ||
+      !body.schedule_id ||
+      !body.date ||
+      !body.timezone
+    ) {
       return NextResponse.json(
         {
           error: "Bad Request",
           message:
-            "Missing required fields: supplement_id, schedule_id, taken_at",
+            "Missing required fields: supplement_id, schedule_id, date, timezone",
         },
         { status: 400 }
       );
     }
 
-    // Validate timestamp format
-    if (!isValidTimestamp(body.taken_at)) {
+    // Validate date format
+    if (!isValidDateString(body.date)) {
       return NextResponse.json(
         {
           error: "Bad Request",
           message:
-            "Invalid timestamp format. Use ISO 8601 format (e.g., 2025-11-10T00:00:00.000Z)",
+            "Invalid date format. Use YYYY-MM-DD format (e.g., 2025-11-10)",
         },
         { status: 400 }
       );
@@ -64,7 +70,7 @@ export async function POST(request: NextRequest) {
       .from("supplements")
       .select("id")
       .eq("id", body.supplement_id)
-      .eq("user_id", user.id)
+      .eq("user_id", userId)
       .single();
 
     if (supplementError || !supplement) {
@@ -77,10 +83,10 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Verify the schedule belongs to this supplement
+    // Verify the schedule belongs to this supplement and get time_of_day
     const { data: schedule, error: scheduleError } = await supabase
       .from("supplement_schedules")
-      .select("id")
+      .select("id, time_of_day")
       .eq("id", body.schedule_id)
       .eq("supplement_id", body.supplement_id)
       .single();
@@ -92,6 +98,34 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Generate schedule-specific timestamp using proper timezone conversion
+    // Convert the user's local date + time to UTC for storage
+    const hoursByTimeOfDay: Record<string, number> = {
+      MORNING: 8,
+      LUNCH: 12,
+      DINNER: 18,
+      BEFORE_SLEEP: 22,
+    };
+    const localHours = hoursByTimeOfDay[schedule.time_of_day] ?? 0;
+
+    // Convert: "2025-11-10" + 8:00 AM PST → "2025-11-10T16:00:00.000Z" (UTC)
+    const scheduleSpecificTimestamp = createUTCTimestampFromLocalDateTime(
+      body.date,
+      localHours,
+      0,
+      body.timezone
+    );
+
+    console.log("🔧 [ADHERENCE DEBUG] Timestamp generation:", {
+      date: body.date,
+      timezone: body.timezone,
+      timeOfDay: schedule.time_of_day,
+      localHours,
+      scheduleSpecificTimestamp,
+      supplementId: body.supplement_id,
+      scheduleId: body.schedule_id,
+    });
+
     // Check if adherence record already exists
     const { data: existingAdherence, error: adherenceCheckError } =
       await supabase
@@ -99,8 +133,8 @@ export async function POST(request: NextRequest) {
         .select("id")
         .eq("supplement_id", body.supplement_id)
         .eq("schedule_id", body.schedule_id)
-        .eq("taken_at", body.taken_at)
-        .eq("user_id", user.id)
+        .eq("taken_at", scheduleSpecificTimestamp)
+        .eq("user_id", userId)
         .maybeSingle();
 
     if (adherenceCheckError) {
@@ -159,13 +193,20 @@ export async function POST(request: NextRequest) {
       is_taken = false;
     } else {
       // Create new adherence record (toggle on)
+      console.log("📝 [ADHERENCE DEBUG] Attempting to insert:", {
+        user_id: userId,
+        supplement_id: body.supplement_id,
+        schedule_id: body.schedule_id,
+        taken_at: scheduleSpecificTimestamp,
+      });
+
       const { data: newAdherence, error: insertError } = await supabase
         .from("supplement_adherence")
         .insert({
-          user_id: user.id,
+          user_id: userId,
           supplement_id: body.supplement_id,
           schedule_id: body.schedule_id,
-          taken_at: body.taken_at,
+          taken_at: scheduleSpecificTimestamp,
         })
         .select("id")
         .single();
@@ -211,7 +252,7 @@ export async function POST(request: NextRequest) {
       success: true,
       is_taken,
       adherence_id,
-      taken_at: body.taken_at, // Return the timestamp for client reference
+      taken_at: scheduleSpecificTimestamp, // Return the schedule-specific timestamp for client reference
     });
   } catch (error) {
     console.error("Unexpected error in adherence toggle:", error);

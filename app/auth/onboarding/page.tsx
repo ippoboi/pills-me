@@ -113,7 +113,9 @@ export default function OnboardingPage() {
       }
     } catch (error) {
       console.error("Registration error:", error);
-      setRegisterError((error as any)?.message || "Failed to create passkey.");
+      setRegisterError(
+        (error as Error)?.message || "Failed to create passkey."
+      );
       alert("Failed to create passkey. Please try again.");
       setIsLoading(false);
     }

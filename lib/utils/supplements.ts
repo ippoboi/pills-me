@@ -1,6 +1,7 @@
 import type { TimeOfDay, SupplementStatus, SupplementSchedule } from "../types";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "../supabase/database.types";
+import { getLocalDayBoundariesInUTC, formatUTCToLocalDate } from "./timezone";
 
 /**
  * Check if supplement is active on given date
@@ -35,8 +36,8 @@ export function isSupplementActiveOnDate(
 }
 
 /**
- * Calculate adherence progress for a supplement based on days
- * Returns percentage: (days taken / total days) * 100
+ * Calculate adherence progress for a supplement based on schedules
+ * Returns percentage: (completed schedules / total possible schedules) * 100
  *
  * @param supabase - Supabase client instance
  * @param supplementId - ID of the supplement
@@ -52,9 +53,10 @@ export async function calculateAdherenceProgress(
   userId: string,
   startDate: string,
   endDate: string | null,
-  referenceDate?: string
+  referenceDate?: string,
+  timezone: string = "UTC"
 ): Promise<{ percentage: number }> {
-  console.log("🔍 [ADHERENCE DEBUG] Starting calculation for:", {
+  console.log("🔍 [ADHERENCE DEBUG] Starting schedule-based calculation for:", {
     supplementId,
     userId,
     startDate,
@@ -63,7 +65,8 @@ export async function calculateAdherenceProgress(
   });
 
   // Use reference date or today (ensure YYYY-MM-DD format)
-  const today = referenceDate || new Date().toISOString().split("T")[0];
+  const today =
+    referenceDate || formatUTCToLocalDate(new Date().toISOString(), timezone);
 
   // Convert timestamps to date strings if needed
   const normalizedStartDate = startDate.includes("T")
@@ -166,35 +169,62 @@ export async function calculateAdherenceProgress(
     totalDays,
   });
 
-  // Get distinct days where user took the supplement
-  // A day is considered "taken" if there's at least one adherence record
-  // Use proper timestamp range filtering for TIMESTAMPTZ column
+  // Get supplement schedules to calculate total possible schedules
+  const { data: supplementSchedules, error: schedulesError } = await supabase
+    .from("supplement_schedules")
+    .select("id")
+    .eq("supplement_id", supplementId);
+
+  if (schedulesError) {
+    console.error(
+      "❌ [ADHERENCE DEBUG] Error fetching supplement schedules:",
+      schedulesError
+    );
+    return { percentage: 0 };
+  }
+
+  const schedulesPerDay = supplementSchedules?.length || 0;
+  const totalPossibleSchedules = totalDays * schedulesPerDay;
+
+  console.log("📈 [ADHERENCE DEBUG] Schedule calculation:", {
+    totalDays,
+    schedulesPerDay,
+    totalPossibleSchedules,
+  });
+
+  // Get actual adherence count (completed schedules)
   const endDateString =
     normalizedEndDate && normalizedEndDate < today ? normalizedEndDate : today;
 
-  // Convert date strings to proper timestamp ranges for TIMESTAMPTZ comparison
-  const startTimestamp = normalizedStartDate + "T00:00:00Z";
-  const endTimestamp = endDateString + "T23:59:59.999Z";
+  // Convert date strings to proper timestamp ranges using timezone utilities
+  const [startTimestamp] = getLocalDayBoundariesInUTC(
+    normalizedStartDate,
+    timezone
+  );
+  const [, calculationEndTimestamp] = getLocalDayBoundariesInUTC(
+    endDateString,
+    timezone
+  );
 
   console.log("🔍 [ADHERENCE DEBUG] Query parameters:", {
     endDateString,
     startTimestamp,
-    endTimestamp,
+    endTimestamp: calculationEndTimestamp,
+    timezone,
     supplementId,
     userId,
   });
 
-  const { data: adherenceRecords, error: adherenceError } = await supabase
+  const { count: adherenceCount, error: adherenceError } = await supabase
     .from("supplement_adherence")
-    .select("taken_at")
+    .select("*", { count: "exact", head: true })
     .eq("supplement_id", supplementId)
     .eq("user_id", userId)
     .gte("taken_at", startTimestamp)
-    .lte("taken_at", endTimestamp);
+    .lte("taken_at", calculationEndTimestamp);
 
   console.log("📋 [ADHERENCE DEBUG] Database query result:", {
-    recordsCount: adherenceRecords?.length || 0,
-    records: adherenceRecords,
+    adherenceCount: adherenceCount || 0,
     error: adherenceError,
   });
 
@@ -206,37 +236,19 @@ export async function calculateAdherenceProgress(
     return { percentage: 0 };
   }
 
-  // Count distinct days taken
-  // taken_at is a TIMESTAMPTZ column, extract date part for daily counting
-  // This ensures timezone-independent daily adherence tracking
-  const distinctDates = (adherenceRecords || []).map((r) => {
-    const date = new Date(r.taken_at);
-    const dateStr = date.toISOString().split("T")[0];
-    console.log("📅 [ADHERENCE DEBUG] Processing record:", {
-      originalTakenAt: r.taken_at,
-      parsedDate: date.toISOString(),
-      extractedDateStr: dateStr,
-    });
-    return dateStr;
-  });
+  const actualAdherence = adherenceCount || 0;
 
-  const distinctDaysTaken = new Set(distinctDates).size;
-
-  console.log("🎯 [ADHERENCE DEBUG] Distinct days processing:", {
-    allDates: distinctDates,
-    uniqueDates: Array.from(new Set(distinctDates)),
-    distinctDaysTaken,
-  });
-
-  // Calculate percentage: days taken / total days * 100
+  // Calculate percentage: completed schedules / total possible schedules * 100
   const adherencePercentage =
-    totalDays > 0 ? Math.round((distinctDaysTaken / totalDays) * 100) : 0;
+    totalPossibleSchedules > 0
+      ? Math.round((actualAdherence / totalPossibleSchedules) * 100)
+      : 0;
 
-  console.log("✅ [ADHERENCE DEBUG] Final calculation:", {
-    distinctDaysTaken,
-    totalDays,
+  console.log("✅ [ADHERENCE DEBUG] Final schedule-based calculation:", {
+    actualAdherence,
+    totalPossibleSchedules,
     adherencePercentage,
-    calculation: `${distinctDaysTaken}/${totalDays} * 100 = ${adherencePercentage}%`,
+    calculation: `${actualAdherence}/${totalPossibleSchedules} * 100 = ${adherencePercentage}%`,
   });
 
   return { percentage: adherencePercentage };

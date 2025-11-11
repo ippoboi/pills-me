@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
 import { validateSupplementInput } from "@/lib/utils/validation";
 import { type SupplementInput } from "@/lib/types";
 import { Database } from "@/lib/supabase/database.types";
+import { authenticateRequest } from "@/lib/auth-helper";
 
 type TimeOfDay = Database["public"]["Enums"]["time_of_day"];
 
@@ -11,19 +11,16 @@ export async function GET(
   { params }: { params: { id: string } }
 ) {
   try {
-    const supabase = await createClient();
-
-    // Check authentication
-    const {
-      data: { user },
-      error: authError,
-    } = await supabase.auth.getUser();
-    if (authError || !user) {
+    // Authenticate using pm_session cookie
+    const auth = await authenticateRequest(request);
+    if (!auth) {
       return NextResponse.json(
         { error: "Unauthorized", message: "Authentication required" },
         { status: 401 }
       );
     }
+
+    const { userId, supabase } = auth;
 
     const supplementId = params.id;
 
@@ -60,7 +57,7 @@ export async function GET(
       `
       )
       .eq("id", supplementId)
-      .eq("user_id", user.id)
+      .eq("user_id", userId)
       .is("deleted_at", null)
       .single();
 
@@ -93,7 +90,7 @@ export async function GET(
       `
       )
       .eq("supplement_id", supplementId)
-      .eq("user_id", user.id)
+      .eq("user_id", userId)
       .gte("taken_at", thirtyDaysAgoTimestamp)
       .order("taken_at", { ascending: false })
       .order("marked_at", { ascending: false });
@@ -156,20 +153,16 @@ export async function PUT(
   { params }: { params: { id: string } }
 ) {
   try {
-    const supabase = await createClient();
-
-    // Check authentication
-    const {
-      data: { user },
-      error: authError,
-    } = await supabase.auth.getUser();
-    if (authError || !user) {
+    // Authenticate using pm_session cookie
+    const auth = await authenticateRequest(request);
+    if (!auth) {
       return NextResponse.json(
         { error: "Unauthorized", message: "Authentication required" },
         { status: 401 }
       );
     }
 
+    const { userId, supabase } = auth;
     const supplementId = params.id;
 
     // Validate supplement ID format
@@ -198,7 +191,7 @@ export async function PUT(
       .from("supplements")
       .select("id, name")
       .eq("id", supplementId)
-      .eq("user_id", user.id)
+      .eq("user_id", userId)
       .is("deleted_at", null)
       .single();
 
@@ -405,20 +398,16 @@ export async function DELETE(
   { params }: { params: { id: string } }
 ) {
   try {
-    const supabase = await createClient();
-
-    // Check authentication
-    const {
-      data: { user },
-      error: authError,
-    } = await supabase.auth.getUser();
-    if (authError || !user) {
+    // Authenticate using pm_session cookie
+    const auth = await authenticateRequest(request);
+    if (!auth) {
       return NextResponse.json(
         { error: "Unauthorized", message: "Authentication required" },
         { status: 401 }
       );
     }
 
+    const { userId, supabase } = auth;
     const supplementId = params.id;
 
     // Validate supplement ID format
@@ -436,7 +425,7 @@ export async function DELETE(
       .from("supplements")
       .select("id, name, deleted_at")
       .eq("id", supplementId)
-      .eq("user_id", user.id)
+      .eq("user_id", userId)
       .single();
 
     if (existingError || !existingSupplement) {

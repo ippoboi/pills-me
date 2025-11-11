@@ -212,6 +212,8 @@ export type Database = {
           deleted_at: string | null;
           end_date: string | null;
           id: string;
+          inventory_total: number | null;
+          low_inventory_threshold: number | null;
           name: string;
           reason: string | null;
           recommendation: string | null;
@@ -228,6 +230,8 @@ export type Database = {
           deleted_at?: string | null;
           end_date?: string | null;
           id?: string;
+          inventory_total?: number | null;
+          low_inventory_threshold?: number | null;
           name: string;
           reason?: string | null;
           recommendation?: string | null;
@@ -244,6 +248,8 @@ export type Database = {
           deleted_at?: string | null;
           end_date?: string | null;
           id?: string;
+          inventory_total?: number | null;
+          low_inventory_threshold?: number | null;
           name?: string;
           reason?: string | null;
           recommendation?: string | null;
