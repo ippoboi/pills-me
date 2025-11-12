@@ -130,6 +130,11 @@ export default function SupplementCard({
           queryKey: supplementsKeys.today(undefined, userTimezone),
         });
 
+        // Invalidate supplement by ID
+        queryClient.invalidateQueries({
+          queryKey: supplementsKeys.byId(supplement.id),
+        });
+
         // Also invalidate supplements list for consistency
         queryClient.invalidateQueries({
           queryKey: ["supplements", "list"],
@@ -230,9 +235,11 @@ export default function SupplementCard({
                 Adherence
               </span>
               <span
-                className={getAdherenceColorClass(
-                  supplement.adherence_progress.percentage
-                )}
+                className={
+                  getAdherenceColorClass(
+                    supplement.adherence_progress.percentage
+                  ).textColor
+                }
               >
                 {supplement.adherence_progress.percentage} %
               </span>

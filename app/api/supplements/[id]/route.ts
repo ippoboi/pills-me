@@ -1,8 +1,14 @@
-import { NextRequest, NextResponse } from "next/server";
-import { validateSupplementInput } from "@/lib/utils/validation";
-import { type SupplementInput } from "@/lib/types";
-import { Database } from "@/lib/supabase/database.types";
 import { authenticateRequest } from "@/lib/auth-helper";
+import { Database } from "@/lib/supabase/database.types";
+import { type SupplementInput } from "@/lib/types";
+import { validateSupplementInput } from "@/lib/utils/validation";
+import {
+  calculateAdherenceProgress,
+  calculateTotalTakes,
+} from "@/lib/utils/supplements";
+import { enumerateLocalDates } from "@/lib/utils/supplements";
+import { formatUTCToLocalDate } from "@/lib/utils/timezone";
+import { NextRequest, NextResponse } from "next/server";
 
 type TimeOfDay = Database["public"]["Enums"]["time_of_day"];
 
@@ -22,7 +28,7 @@ export async function GET(
 
     const { userId, supabase } = auth;
 
-    const supplementId = params.id;
+    const { id: supplementId } = await params;
 
     // Validate supplement ID format (basic UUID check)
     const uuidRegex =
@@ -50,6 +56,8 @@ export async function GET(
         end_date,
         status,
         created_at,
+        inventory_total,
+        low_inventory_threshold,
         supplement_schedules (
           id,
           time_of_day
@@ -71,12 +79,13 @@ export async function GET(
       );
     }
 
-    // Fetch recent adherence history (last 30 days)
-    const thirtyDaysAgo = new Date();
-    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-    // Convert to proper timestamp for TIMESTAMPTZ comparison
-    const thirtyDaysAgoTimestamp =
-      thirtyDaysAgo.toISOString().split("T")[0] + "T00:00:00Z";
+    // TODO: MODIFY THIS FOR INDEFINITE SUPPLEMENTS LATER ON WHEN WE HAVE 90 DAYS+ i would say
+    // // Fetch recent adherence history (last 30 days)
+    // const thirtyDaysAgo = new Date();
+    // thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+    // // Convert to proper timestamp for TIMESTAMPTZ comparison
+    // const thirtyDaysAgoTimestamp =
+    //   thirtyDaysAgo.toISOString().split("T")[0] + "T00:00:00Z";
 
     const { data: adherenceHistory, error: adherenceError } = await supabase
       .from("supplement_adherence")
@@ -91,7 +100,6 @@ export async function GET(
       )
       .eq("supplement_id", supplementId)
       .eq("user_id", userId)
-      .gte("taken_at", thirtyDaysAgoTimestamp)
       .order("taken_at", { ascending: false })
       .order("marked_at", { ascending: false });
 
@@ -107,6 +115,47 @@ export async function GET(
       );
     }
 
+    // Calculate adherence progress using schedules and adherence table
+    const url = new URL(request.url);
+    const timezone = url.searchParams.get("timezone") || "UTC";
+    const adherence_progress = await calculateAdherenceProgress(
+      supabase,
+      supplementId,
+      userId,
+      supplement.start_date,
+      supplement.end_date,
+      undefined,
+      timezone
+    );
+    const schedulesPerDay = supplement.supplement_schedules?.length ?? 0;
+    const total_takes = calculateTotalTakes(
+      supplement.start_date,
+      supplement.end_date,
+      schedulesPerDay,
+      undefined,
+      timezone
+    );
+    // Build day buckets { date, isTaken }[]
+    const adherenceDateSet = new Set(
+      (adherenceHistory || []).map((a) =>
+        formatUTCToLocalDate(a.taken_at, timezone)
+      )
+    );
+    const allDays = enumerateLocalDates(
+      supplement.start_date,
+      supplement.end_date,
+      timezone
+    );
+    const todayLocal = formatUTCToLocalDate(new Date().toISOString(), timezone);
+    const day_buckets = allDays.map((d) => {
+      const isFuture = d > todayLocal;
+      return {
+        date: d,
+        isTaken: adherenceDateSet.has(d),
+        isFuture,
+      };
+    });
+
     // Format the response
     const response = {
       supplement: {
@@ -121,12 +170,16 @@ export async function GET(
         end_date: supplement.end_date,
         status: supplement.status,
         created_at: supplement.created_at,
+        inventory_total: supplement.inventory_total,
+        low_inventory_threshold: supplement.low_inventory_threshold,
+        schedules:
+          supplement.supplement_schedules?.map(
+            (schedule) => schedule.time_of_day
+          ) ?? [],
+        total_takes,
+        adherence_progress,
       },
-      schedules:
-        supplement.supplement_schedules?.map((schedule) => ({
-          id: schedule.id,
-          time_of_day: schedule.time_of_day,
-        })) || [],
+      day_buckets,
       recent_adherence:
         adherenceHistory?.map((adherence) => ({
           date: adherence.taken_at,
@@ -150,7 +203,7 @@ export async function GET(
 
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     // Authenticate using pm_session cookie
@@ -163,7 +216,7 @@ export async function PUT(
     }
 
     const { userId, supabase } = auth;
-    const supplementId = params.id;
+    const { id: supplementId } = await params;
 
     // Validate supplement ID format
     const uuidRegex =
@@ -208,7 +261,7 @@ export async function PUT(
     // Validate input if provided (partial validation for updates)
     if (Object.keys(body).length > 0) {
       // For updates, we need to validate only the fields that are provided
-      const fieldsToValidate: any = {};
+      const fieldsToValidate: Partial<SupplementInput> = {};
 
       // Copy provided fields for validation
       if (body.name !== undefined) fieldsToValidate.name = body.name;
@@ -227,6 +280,10 @@ export async function PUT(
         fieldsToValidate.source_name = body.source_name;
       if (body.source_url !== undefined)
         fieldsToValidate.source_url = body.source_url;
+      if (body.inventory_total !== undefined)
+        fieldsToValidate.inventory_total = body.inventory_total;
+      if (body.low_inventory_threshold !== undefined)
+        fieldsToValidate.low_inventory_threshold = body.low_inventory_threshold;
 
       // Only validate if we have fields that need validation
       if (
@@ -258,21 +315,25 @@ export async function PUT(
     }
 
     // Prepare update data
-    const updateData: any = {};
+    const updateData: Partial<SupplementInput> = {};
     if (body.name !== undefined) updateData.name = body.name.trim();
     if (body.capsules_per_take !== undefined)
       updateData.capsules_per_take = body.capsules_per_take;
     if (body.recommendation !== undefined)
-      updateData.recommendation = body.recommendation?.trim() || null;
+      updateData.recommendation = body.recommendation?.trim() || undefined;
     if (body.reason !== undefined)
-      updateData.reason = body.reason?.trim() || null;
+      updateData.reason = body.reason?.trim() || undefined;
     if (body.source_name !== undefined)
-      updateData.source_name = body.source_name?.trim() || null;
+      updateData.source_name = body.source_name?.trim() || undefined;
     if (body.source_url !== undefined)
-      updateData.source_url = body.source_url?.trim() || null;
+      updateData.source_url = body.source_url?.trim() || undefined;
     if (body.start_date !== undefined) updateData.start_date = body.start_date;
     if (body.end_date !== undefined)
-      updateData.end_date = body.end_date || null;
+      updateData.end_date = body.end_date || undefined;
+    if (body.inventory_total !== undefined)
+      updateData.inventory_total = body.inventory_total;
+    if (body.low_inventory_threshold !== undefined)
+      updateData.low_inventory_threshold = body.low_inventory_threshold;
 
     // Update supplement if there are fields to update
     if (Object.keys(updateData).length > 0) {
@@ -395,7 +456,7 @@ export async function PUT(
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     // Authenticate using pm_session cookie
@@ -408,7 +469,7 @@ export async function DELETE(
     }
 
     const { userId, supabase } = auth;
-    const supplementId = params.id;
+    const { id: supplementId } = await params;
 
     // Validate supplement ID format
     const uuidRegex =

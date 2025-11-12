@@ -12,7 +12,7 @@ export interface AuditLogEntry {
   resourceId?: string;
   ipAddress?: string;
   userAgent?: string;
-  details?: Record<string, any>;
+  details?: Record<string, string>;
 }
 
 /**

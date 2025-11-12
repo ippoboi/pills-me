@@ -2,6 +2,12 @@ import type { TimeOfDay, SupplementStatus, SupplementSchedule } from "../types";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "../supabase/database.types";
 import { getLocalDayBoundariesInUTC, formatUTCToLocalDate } from "./timezone";
+import {
+  Activity02FreeIcons,
+  Alert02FreeIcons,
+  Tick02FreeIcons,
+} from "@hugeicons/core-free-icons";
+import { HugeiconsIconProps } from "@hugeicons/react";
 
 /**
  * Check if supplement is active on given date
@@ -296,12 +302,138 @@ export function getTimeOfDayOrder(timeOfDay: TimeOfDay): number {
 /**
  * Get adherence color class based on adherence percentage
  */
-export function getAdherenceColorClass(adherencePercentage: number): string {
+export function getAdherenceColorClass(adherencePercentage: number): {
+  textColor: string;
+  backgroundColor: string;
+} {
   if (adherencePercentage >= 90) {
-    return "text-green-600";
+    return { textColor: "text-green-600", backgroundColor: "bg-green-50" };
   } else if (adherencePercentage >= 70) {
-    return "text-amber-600";
+    return { textColor: "text-amber-600", backgroundColor: "bg-amber-50" };
   } else {
-    return "text-red-600";
+    return { textColor: "text-red-600", backgroundColor: "bg-red-50" };
   }
 }
+
+/**
+ * Calculate total takes for a supplement.
+ * - Finite period (has end_date): inclusive days × schedulesPerDay
+ * - Indefinite period (no end_date): inclusive days since start (no multiplication)
+ */
+export function calculateTotalTakes(
+  startDate: string,
+  endDate: string | null,
+  schedulesPerDay: number,
+  referenceDate?: string,
+  timezone: string = "UTC"
+): number {
+  // Normalize to YYYY-MM-DD
+  const normalizedStart = startDate.includes("T")
+    ? startDate.split("T")[0]
+    : startDate;
+  const normalizedEnd = endDate
+    ? endDate.includes("T")
+      ? endDate.split("T")[0]
+      : endDate
+    : null;
+  const effectiveEnd =
+    normalizedEnd ||
+    referenceDate ||
+    formatUTCToLocalDate(new Date().toISOString(), timezone);
+
+  const start = new Date(normalizedStart + "T00:00:00");
+  const end = new Date(effectiveEnd + "T00:00:00");
+  const msPerDay = 1000 * 60 * 60 * 24;
+  const daysInclusive = Math.max(
+    0,
+    Math.floor((end.getTime() - start.getTime()) / msPerDay) + 1
+  );
+
+  if (normalizedEnd) {
+    // Finite: days × schedules per day
+    return daysInclusive * Math.max(0, schedulesPerDay);
+  }
+  // Indefinite: just the number of days since start
+  return daysInclusive;
+}
+
+/**
+ * Enumerate local dates (YYYY-MM-DD) from start to end inclusive.
+ * If endDate is null, uses referenceDate or today in given timezone.
+ */
+export function enumerateLocalDates(
+  startDate: string,
+  endDate: string | null,
+  timezone: string = "UTC",
+  referenceDate?: string
+): string[] {
+  const normalizedStart = startDate.includes("T")
+    ? startDate.split("T")[0]
+    : startDate;
+  const normalizedEnd = endDate
+    ? endDate.includes("T")
+      ? endDate.split("T")[0]
+      : endDate
+    : null;
+  const effectiveEnd =
+    normalizedEnd ||
+    referenceDate ||
+    formatUTCToLocalDate(new Date().toISOString(), timezone);
+
+  const dates: string[] = [];
+  const start = new Date(normalizedStart + "T00:00:00");
+  const end = new Date(effectiveEnd + "T00:00:00");
+  const msPerDay = 1000 * 60 * 60 * 24;
+  for (let t = start.getTime(); t <= end.getTime(); t += msPerDay) {
+    const d = new Date(t);
+    dates.push(d.toISOString().split("T")[0]);
+  }
+  return dates;
+}
+
+const TIME_OF_DAY_LABELS: Record<TimeOfDay, string> = {
+  MORNING: "Morning",
+  LUNCH: "Lunch",
+  DINNER: "Dinner",
+  BEFORE_SLEEP: "Before sleep",
+};
+
+export function formatTimeOfDayLabel(timeOfDay: TimeOfDay): string {
+  return TIME_OF_DAY_LABELS[timeOfDay] ?? timeOfDay;
+}
+
+export function formatTimeOfDayList(timesOfDay: TimeOfDay[]): string {
+  return timesOfDay.map(formatTimeOfDayLabel).join(", ");
+}
+
+export interface SupplementStatusConfig {
+  label: string;
+  value: SupplementStatus;
+  colorClass: string;
+  backgroundClass: string;
+  icon: HugeiconsIconProps["icon"];
+}
+
+export const SUPPLEMENT_STATUS_CONFIGS: SupplementStatusConfig[] = [
+  {
+    label: "Active",
+    value: "ACTIVE",
+    colorClass: "text-blue-600",
+    backgroundClass: "bg-blue-50",
+    icon: Activity02FreeIcons,
+  },
+  {
+    label: "Completed",
+    value: "COMPLETED",
+    colorClass: "text-green-600",
+    backgroundClass: "bg-green-50",
+    icon: Tick02FreeIcons,
+  },
+  {
+    label: "Cancelled",
+    value: "CANCELLED",
+    colorClass: "text-red-600",
+    backgroundClass: "bg-red-50",
+    icon: Alert02FreeIcons,
+  },
+];

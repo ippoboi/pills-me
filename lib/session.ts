@@ -53,7 +53,6 @@ async function importHmacKey(secret: string): Promise<CryptoKey> {
   // Normalize to an ArrayBuffer to satisfy older TS/DOM lib types
   const buf = new ArrayBuffer(keyData.byteLength);
   new Uint8Array(buf).set(keyData);
-  // @ts-ignore - global crypto exists in Node >= 18 and Edge runtimes
   return await crypto.subtle.importKey(
     "raw",
     buf,
@@ -65,7 +64,7 @@ async function importHmacKey(secret: string): Promise<CryptoKey> {
 
 async function hmacSha256(message: string, secret: string): Promise<string> {
   const key = await importHmacKey(secret);
-  // @ts-ignore
+
   const sig = await crypto.subtle.sign("HMAC", key, toUint8Array(message));
   return base64urlEncode(sig);
 }

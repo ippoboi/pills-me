@@ -93,7 +93,7 @@ export function Navigation() {
               <button
                 ref={
                   activeHref === tab.href
-                    ? (activeTabElementRef as any)
+                    ? (activeTabElementRef as React.RefObject<HTMLButtonElement>)
                     : undefined
                 }
                 data-tab={tab.href}

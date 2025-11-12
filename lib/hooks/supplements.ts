@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { createSupplement } from "../mutations/supplements";
-import { getTodaySupplements } from "../queries/supplements";
+import { getSupplementById, getTodaySupplements } from "../queries/supplements";
 import { getSupplementsList } from "../queries/supplements";
 import { getUserTimezone } from "../utils/timezone";
 import { supplementsKeys } from "../queries/keys";
@@ -8,6 +8,7 @@ import type {
   CreateSupplementResponse,
   TodaySupplementsResponse,
   SupplementInput,
+  SupplementResponse,
 } from "../types";
 import type { SupplementStatus, SupplementsListResponse } from "../types";
 
@@ -32,7 +33,7 @@ export function useCreateSupplement() {
       // Invalidate all today queries (with and without date)
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: ["supplements", "today"] }),
-        queryClient.invalidateQueries({ queryKey: supplementsKeys.all }),
+        queryClient.invalidateQueries({ queryKey: supplementsKeys.all() }),
       ]);
 
       // Force a refetch to ensure data is fresh
@@ -68,6 +69,18 @@ export function useSupplementsList(status?: SupplementStatus | null) {
   return useQuery<SupplementsListResponse, Error>({
     queryKey: ["supplements", "list", status || "all"],
     queryFn: () => getSupplementsList(status),
+    staleTime: 5 * 60 * 1000,
+    refetchOnWindowFocus: true,
+  });
+}
+
+// Supplement by ID Query Hook
+export function useSupplementById(id: string, timezone?: string) {
+  const userTimezone = timezone || getUserTimezone();
+
+  return useQuery<SupplementResponse, Error>({
+    queryKey: supplementsKeys.byId(id),
+    queryFn: () => getSupplementById(id, userTimezone),
     staleTime: 5 * 60 * 1000,
     refetchOnWindowFocus: true,
   });

@@ -1,6 +1,10 @@
 "use client";
 
 import { SupplementsListItem, SupplementStatus } from "@/lib/types";
+import {
+  SUPPLEMENT_STATUS_CONFIGS,
+  type SupplementStatusConfig,
+} from "@/lib/utils/supplements";
 import { ArrowDown01FreeIcons } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { motion, AnimatePresence } from "motion/react";
@@ -11,25 +15,7 @@ interface SupplementsListSectionProps {
   supplements: SupplementsListItem[];
 }
 
-interface StatusConfig {
-  label: string;
-  value: SupplementStatus;
-}
-
-const statusConfigs: StatusConfig[] = [
-  {
-    label: "Active",
-    value: "ACTIVE",
-  },
-  {
-    label: "Completed",
-    value: "COMPLETED",
-  },
-  {
-    label: "Cancelled",
-    value: "CANCELLED",
-  },
-];
+const statusConfigs: SupplementStatusConfig[] = SUPPLEMENT_STATUS_CONFIGS;
 
 export default function SupplementsListSection({
   supplements,

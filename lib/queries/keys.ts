@@ -4,9 +4,10 @@
  */
 
 export const supplementsKeys = {
-  all: ["supplements"] as const,
+  all: () => ["supplements"] as const,
   today: (date?: string, timezone?: string) =>
     ["supplements", "today", date, timezone] as const,
+  byId: (id: string) => ["supplements", "id", id] as const,
 } as const;
 
 export const userKeys = {

@@ -8,6 +8,7 @@ import {
 } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 
 type SupplementListItem = SupplementsListItem["items"][0];
 
@@ -24,12 +25,16 @@ function formatDate(dateString: string) {
 }
 
 export default function SupplementListCard({ item }: SupplementListCardProps) {
+  const router = useRouter();
   const hasEndDate = item.end_date !== null;
   const startDate = formatDate(item.start_date);
   const endDate = item.end_date ? formatDate(item.end_date) : null;
 
   return (
-    <div className="bg-white flex items-center gap-4 p-4 rounded-3xl hover:bg-gray-50 transition-colors cursor-pointer">
+    <div
+      onClick={() => router.push(`/protected/supplements/${item.id}`)}
+      className="bg-white flex items-center gap-4 p-4 rounded-3xl hover:bg-gray-50 transition-colors cursor-pointer"
+    >
       <div className="bg-blue-50 p-3 rounded-xl flex-shrink-0">
         <HugeiconsIcon
           icon={Medicine02FreeIcons}

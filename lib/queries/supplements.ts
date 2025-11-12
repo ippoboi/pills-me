@@ -3,6 +3,7 @@ import type {
   ApiError,
   SupplementStatus,
   SupplementsListResponse,
+  SupplementResponse,
 } from "../types";
 
 /**
@@ -43,6 +44,25 @@ export async function getSupplementsList(
   if (!response.ok) {
     const errorData: ApiError = await response.json();
     throw new Error(errorData.message || "Failed to fetch supplements list");
+  }
+  return response.json();
+}
+
+/**
+ * Query functions for supplement by ID
+ */
+export async function getSupplementById(
+  id: string,
+  timezone?: string
+): Promise<SupplementResponse> {
+  const url = new URL(`/api/supplements/${id}`, window.location.origin);
+  if (timezone) {
+    url.searchParams.set("timezone", timezone);
+  }
+  const response = await fetch(url.toString());
+  if (!response.ok) {
+    const errorData: ApiError = await response.json();
+    throw new Error(errorData.message || "Failed to fetch supplement by ID");
   }
   return response.json();
 }

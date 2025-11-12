@@ -16,6 +16,7 @@ export interface SupplementInput {
   end_date?: string;
   reason?: string;
   inventory_total?: number;
+  low_inventory_threshold?: number;
 }
 
 // API Response Types
@@ -116,4 +117,43 @@ export interface SupplementsListItem {
 
 export interface SupplementsListResponse {
   supplements: SupplementsListItem[];
+}
+
+// -----------------------------------------------------------------------------
+// Supplement by ID Types
+// -----------------------------------------------------------------------------
+
+export interface SupplementResponse {
+  supplement: {
+    id: string;
+    name: string;
+    capsules_per_take: number;
+    recommendation: string | null;
+    reason: string | null;
+    source_name: string | null;
+    source_url: string | null;
+    start_date: string;
+    end_date: string | null;
+    total_takes?: number;
+    status: SupplementStatus;
+    created_at: string;
+    inventory_total: number | null;
+    low_inventory_threshold: number | null;
+    schedules: Array<TimeOfDay>;
+    adherence_progress: {
+      percentage: number;
+      completed: number;
+      total_possible: number;
+    };
+  };
+  day_buckets: Array<{
+    date: string;
+    isTaken: boolean;
+    isFuture: boolean;
+  }>;
+  recent_adherence: Array<{
+    date: string;
+    time_of_day: string;
+    marked_at: string;
+  }>;
 }

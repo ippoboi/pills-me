@@ -76,7 +76,7 @@ export function PasskeyManagementArchive({
 
       <div className="bg-accent text-sm p-4 px-5 rounded-md text-foreground flex gap-3 items-center">
         <InfoIcon size={16} strokeWidth={2} />
-        This is a protected page. You're authenticated with passkeys.
+        This is a protected page. You&apos;re authenticated with passkeys.
       </div>
 
       <div>
