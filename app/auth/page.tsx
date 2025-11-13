@@ -195,7 +195,7 @@ export default function AuthPage() {
         <div className="flex items-center gap-6 max-w-md text-white">
           <HugeiconsIcon
             icon={ComputerPhoneSyncFreeIcons}
-            className="w-12 h-12"
+            className="w-10 h-10"
           />
           <div className="text-left space-y-1">
             <h3 className="text-lg font-medium">Works Across Devices</h3>
