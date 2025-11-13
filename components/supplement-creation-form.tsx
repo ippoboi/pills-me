@@ -352,6 +352,7 @@ export default function SupplementCreationForm({
           formData.period_type === "Indefinitely"
             ? formData.inventory_total
             : undefined,
+        missed_days: missedDays.length > 0 ? missedDays : undefined,
       };
 
       console.log("Submitting supplement:", supplementData);

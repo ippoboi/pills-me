@@ -17,6 +17,7 @@ export interface SupplementInput {
   reason?: string;
   inventory_total?: number;
   low_inventory_threshold?: number;
+  missed_days?: string[]; // Array of date strings in format "MM/DD/YYYY" for days that should NOT have adherence records
 }
 
 // API Response Types

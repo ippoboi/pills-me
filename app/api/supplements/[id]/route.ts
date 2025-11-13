@@ -14,7 +14,7 @@ type TimeOfDay = Database["public"]["Enums"]["time_of_day"];
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     // Authenticate using pm_session cookie

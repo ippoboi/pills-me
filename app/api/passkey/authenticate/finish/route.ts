@@ -223,7 +223,7 @@ export async function POST(request: Request) {
       userAgent: getUserAgent(request),
       details: {
         credentialId: storedCred.credential_id,
-        authenticatorAttachment: storedCred.authenticator_attachment,
+        authenticatorAttachment: String(storedCred.authenticator_attachment),
         lastUsedAt: new Date().toISOString(),
       },
     });

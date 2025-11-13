@@ -124,8 +124,8 @@ export async function POST(request: Request) {
     console.log("[passkey][register/finish] STORING PUBLIC KEY", {
       type: typeof credentialPublicKey,
       byteLength:
-        (credentialPublicKey as any)?.byteLength ||
-        (credentialPublicKey as any)?.length,
+        (credentialPublicKey as Uint8Array)?.byteLength ||
+        (credentialPublicKey as Uint8Array)?.length,
       headHex: sample,
       looksCBORMap: sample?.startsWith("a5") || sample?.startsWith("a4"),
     });
@@ -185,10 +185,10 @@ export async function POST(request: Request) {
         details: {
           userName: finalUserName,
           userDisplayName: finalUserDisplayName,
-          deviceInfo,
+          deviceInfo: JSON.stringify(deviceInfo),
           authenticatorAttachment,
-          backupEligible: credentialBackedUp,
-          backupState: credentialBackedUp,
+          backupEligible: String(credentialBackedUp),
+          backupState: String(credentialBackedUp),
         },
       });
     }

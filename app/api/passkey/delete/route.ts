@@ -62,7 +62,7 @@ export async function POST(request: Request) {
         ipAddress: getClientIp(request),
         userAgent: getUserAgent(request),
         details: {
-          success: false,
+          success: "false",
           error: error instanceof Error ? error.message : "Unknown error",
         },
       });

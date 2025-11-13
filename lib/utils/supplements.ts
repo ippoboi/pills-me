@@ -306,9 +306,9 @@ export function getAdherenceColorClass(adherencePercentage: number): {
   textColor: string;
   backgroundColor: string;
 } {
-  if (adherencePercentage >= 90) {
+  if (adherencePercentage >= 80) {
     return { textColor: "text-green-600", backgroundColor: "bg-green-50" };
-  } else if (adherencePercentage >= 70) {
+  } else if (adherencePercentage >= 50) {
     return { textColor: "text-amber-600", backgroundColor: "bg-amber-50" };
   } else {
     return { textColor: "text-red-600", backgroundColor: "bg-red-50" };
@@ -341,8 +341,14 @@ export function calculateTotalTakes(
     referenceDate ||
     formatUTCToLocalDate(new Date().toISOString(), timezone);
 
-  const start = new Date(normalizedStart + "T00:00:00");
-  const end = new Date(effectiveEnd + "T00:00:00");
+  // Use Date.UTC to avoid timezone-related off-by-one errors
+  const [startYear, startMonth, startDay] = normalizedStart
+    .split("-")
+    .map(Number);
+  const [endYear, endMonth, endDay] = effectiveEnd.split("-").map(Number);
+
+  const start = new Date(Date.UTC(startYear, startMonth - 1, startDay));
+  const end = new Date(Date.UTC(endYear, endMonth - 1, endDay));
   const msPerDay = 1000 * 60 * 60 * 24;
   const daysInclusive = Math.max(
     0,
@@ -381,9 +387,16 @@ export function enumerateLocalDates(
     formatUTCToLocalDate(new Date().toISOString(), timezone);
 
   const dates: string[] = [];
-  const start = new Date(normalizedStart + "T00:00:00");
-  const end = new Date(effectiveEnd + "T00:00:00");
+  // Use Date.UTC to avoid timezone-related off-by-one errors
+  const [startYear, startMonth, startDay] = normalizedStart
+    .split("-")
+    .map(Number);
+  const [endYear, endMonth, endDay] = effectiveEnd.split("-").map(Number);
+
+  const start = new Date(Date.UTC(startYear, startMonth - 1, startDay));
+  const end = new Date(Date.UTC(endYear, endMonth - 1, endDay));
   const msPerDay = 1000 * 60 * 60 * 24;
+
   for (let t = start.getTime(); t <= end.getTime(); t += msPerDay) {
     const d = new Date(t);
     dates.push(d.toISOString().split("T")[0]);

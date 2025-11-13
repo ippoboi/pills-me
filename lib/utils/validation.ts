@@ -82,6 +82,17 @@ export function validateSupplementInput(
     errors.push("Source name must be a string");
   }
 
+  if (data.missed_days && !Array.isArray(data.missed_days)) {
+    errors.push("Missed days must be an array");
+  } else if (data.missed_days && Array.isArray(data.missed_days)) {
+    const invalidDates = data.missed_days.filter(
+      (date) => typeof date !== "string" || date.trim().length === 0
+    );
+    if (invalidDates.length > 0) {
+      errors.push("All missed days must be non-empty strings");
+    }
+  }
+
   return {
     valid: errors.length === 0,
     errors: errors.length > 0 ? errors : undefined,

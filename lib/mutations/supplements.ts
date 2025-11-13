@@ -3,6 +3,7 @@ import type {
   CreateSupplementResponse,
   ApiError,
 } from "../types";
+import { getUserTimezone } from "../utils/timezone";
 
 /**
  * Mutation functions for supplement operations (API calls)
@@ -11,13 +12,19 @@ import type {
 export async function createSupplement(
   data: SupplementInput
 ): Promise<CreateSupplementResponse> {
-  const response = await fetch("/api/supplements/create", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify(data),
-  });
+  // Get user's timezone for proper UTC conversion of backfill records
+  const timezone = getUserTimezone();
+
+  const response = await fetch(
+    `/api/supplements/create?timezone=${encodeURIComponent(timezone)}`,
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(data),
+    }
+  );
 
   if (!response.ok) {
     const errorData: ApiError = await response.json();

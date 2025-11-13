@@ -65,7 +65,10 @@ async function importHmacKey(secret: string): Promise<CryptoKey> {
 async function hmacSha256(message: string, secret: string): Promise<string> {
   const key = await importHmacKey(secret);
 
-  const sig = await crypto.subtle.sign("HMAC", key, toUint8Array(message));
+  const messageBytes = toUint8Array(message);
+  const buf = new ArrayBuffer(messageBytes.byteLength);
+  new Uint8Array(buf).set(messageBytes);
+  const sig = await crypto.subtle.sign("HMAC", key, buf);
   return base64urlEncode(sig);
 }
 
