@@ -1,8 +1,24 @@
 import { generateRegistrationOptions } from "@simplewebauthn/server";
 import { createClient } from "@supabase/supabase-js";
 import { getDefaultRegistrationOptions, getRPConfig } from "@/lib/webauthn";
+import { checkRateLimit } from "@/lib/rate-limiter";
+import { NextResponse } from "next/server";
 
 export async function POST(request: Request) {
+  // Apply rate limiting for auth endpoints
+  const rateLimitResult = await checkRateLimit(request, "auth");
+  if (!rateLimitResult.success) {
+    return NextResponse.json(
+      { error: "Too many requests. Please try again later." },
+      {
+        status: 429,
+        headers: {
+          "Retry-After": rateLimitResult.retryAfter.toString(),
+          "X-RateLimit-Remaining": rateLimitResult.remaining.toString(),
+        },
+      }
+    );
+  }
   try {
     const { userId, userName, userDisplayName } = await request.json();
     if (!userId) {
@@ -42,7 +58,7 @@ export async function POST(request: Request) {
         getDefaultRegistrationOptions().authenticatorSelection,
       excludeCredentials,
       // Prefer ES256 only for broadest compatibility across runtimes
-      supportedAlgorithmIDs: [-7],
+      supportedAlgorithmIDs: [-7, -257],
     });
 
     const expiresAt =

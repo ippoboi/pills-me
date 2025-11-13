@@ -3,6 +3,15 @@ import { Geist } from "next/font/google";
 import { ThemeProvider } from "next-themes";
 import "./globals.css";
 import Providers from "./providers";
+import {
+  validateEnvironmentVariables,
+  isServerEnvironment,
+} from "@/lib/env-validation";
+
+// Validate environment variables on server startup
+if (isServerEnvironment()) {
+  validateEnvironmentVariables();
+}
 
 const defaultUrl = process.env.VERCEL_URL
   ? `https://${process.env.VERCEL_URL}`

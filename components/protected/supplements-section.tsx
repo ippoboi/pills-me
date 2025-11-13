@@ -142,7 +142,7 @@ export default function SupplementsSection({
             transition={{ duration: 0.25 }}
           >
             {/* Section Header */}
-            <div className="flex items-center justify-between px-6">
+            <div className="flex items-center justify-between pl-4 pr-6 md:px-6">
               <div className="flex items-center gap-2 text-gray-600">
                 <HugeiconsIcon
                   icon={config.icon}

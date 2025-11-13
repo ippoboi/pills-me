@@ -83,7 +83,7 @@ export function Navigation() {
 
   return (
     <div
-      className="z-50 shadow-2xl shadow-gray-200 fixed bottom-20 left-1/2 -translate-x-1/2 rounded-[22px] border border-gray-200 bg-gray-100 p-1"
+      className="shadow-2xl shadow-gray-200 rounded-[22px] border border-gray-200 bg-gray-100 p-1"
       data-active={activeHref}
     >
       <div className="relative" data-active={activeHref}>

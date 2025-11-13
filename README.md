@@ -41,9 +41,15 @@ PillsMe is an open-source supplement tracking application that helps you stay on
 
 ### 🔒 Security & Privacy
 
-- Built on [Supabase](https://supabase.com) with Row Level Security (RLS)
-- User data is isolated and secure
-- Open source - audit the code yourself
+- **Passkey-only authentication** - No passwords to remember or compromise
+- **Phishing-resistant** - WebAuthn cryptographically binds to your domain
+- **Rate limiting** - Protection against brute force attacks (5 requests per 15 minutes)
+- **Content Security Policy** - XSS protection via strict CSP headers
+- **Row Level Security** - Database-level user data isolation
+- **Audit logging** - Complete security event trail for compliance
+- **Automated cleanup** - Expired authentication challenges removed hourly
+- **Environment validation** - Startup checks ensure secure configuration
+- **Open source** - Audit the code yourself
 
 ## Tech Stack
 
@@ -83,7 +89,7 @@ PillsMe is an open-source supplement tracking application that helps you stay on
 
 3. **Set up environment variables**
 
-   Create a `.env.local` file in the root directory:
+   Create a `.env` file in the root directory (or `.env.local` if you prefer):
 
    ```env
    # Supabase Configuration
@@ -95,6 +101,9 @@ PillsMe is an open-source supplement tracking application that helps you stay on
    NEXT_PUBLIC_RP_ID=localhost
    NEXT_PUBLIC_RP_NAME=PillsMe
    NEXT_PUBLIC_EXPECTED_ORIGIN=http://localhost:3000
+
+   # Security Configuration
+   APP_SESSION_SECRET=your_secure_random_string_at_least_32_characters_long
    ```
 
    You can find your Supabase credentials in your [Supabase project settings](https://supabase.com/dashboard/project/_/settings/api).
@@ -107,16 +116,29 @@ PillsMe is an open-source supplement tracking application that helps you stay on
    # Using Supabase CLI (recommended)
    supabase db push
 
-   # Or manually run the migration file:
-   # supabase/migrations/create_supplement_tracking_schema.sql
+   # Or manually run the migration files in order:
+   # 1. supabase/migrations/create_supplement_tracking_schema.sql
+   # 2. supabase/migrations/add_inventory_and_period_fields.sql
+   # 3. supabase/migrations/setup_challenge_cleanup.sql
    ```
 
-   The migration creates the following tables:
+   The migrations create the following:
+
+   **Tables:**
 
    - `supplements` - Stores supplement information
    - `supplement_schedules` - Defines when supplements should be taken
    - `supplement_adherence` - Tracks when doses are marked as taken
    - `user_preferences` - User-specific settings
+   - `passkeys` - Stores WebAuthn passkey credentials
+   - `passkey_challenges` - Temporary storage for authentication challenges
+   - `audit_logs` - Security audit trail for authentication events
+
+   **Security Features:**
+
+   - Row Level Security (RLS) policies on all tables
+   - Automated cleanup of expired passkey challenges via pg_cron
+   - Comprehensive audit logging for compliance
 
 5. **Start the development server**
 

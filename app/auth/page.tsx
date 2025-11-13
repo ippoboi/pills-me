@@ -77,14 +77,14 @@ export default function AuthPage() {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-[url('/auth-illustration.jpg')] bg-cover bg-center relative overflow-hidden">
-      <div className="max-w-md w-full space-y-8 mx-auto text-center">
+      <div className="p-4 md:p-0 max-w-md w-full space-y-8 mx-auto text-center">
         <div className="flex flex-col items-center gap-2">
           {/* Fingerprint icon */}
           <Fingerprint className="w-16 h-16 text-white mb-6" strokeWidth={1} />
 
-          <h1 className="text-3xl font-medium text-white">Simple Sign In</h1>
-          <p className="text-zinc-200 text-lg">
-            Passkeys are a fast and secure way to sign in.
+          <h1 className="text-3xl font-medium text-white">Easy Sign In</h1>
+          <p className="text-zinc-200 text-lg max-w-[220px] md:max-w-none">
+            Passkeys offer a quick, secure way to log in.
           </p>
         </div>
 
@@ -94,6 +94,45 @@ export default function AuthPage() {
             {error}
           </div>
         )}
+
+        {/* Feature callouts */}
+        <div className="flex lg:hidden flex-col gap-8 text-center ">
+          <div className="flex items-center gap-4 text-white">
+            <HugeiconsIcon icon={FaceIdFreeIcons} className="w-8 h-8" />
+            <div className="text-left space-y-1">
+              <h3 className="font-medium">No Passwords Needed</h3>
+              <p className="text-sm text-zinc-200">
+                Use Face ID to get in right away, no typing passwords or
+                entering SMS codes.
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-4 max-w-md text-white">
+            <HugeiconsIcon icon={LockPasswordFreeIcons} className="w-10 h-10" />
+            <div className="text-left space-y-1">
+              <h3 className="font-medium">Built-in Security</h3>
+              <p className="text-sm text-zinc-200">
+                Your passkeys stay safely on your device, shielding you from
+                phishing and similar attacks.
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-4 text-white">
+            <HugeiconsIcon
+              icon={ComputerPhoneSyncFreeIcons}
+              className="w-8 h-8"
+            />
+            <div className="text-left space-y-1">
+              <h3 className="font-medium">Works Across Devices</h3>
+              <p className="text-sm text-zinc-200">
+                Passkeys sync across your devices so you can sign in from
+                anywhere.
+              </p>
+            </div>
+          </div>
+        </div>
 
         {/* Action buttons */}
         <div className="space-y-3">
@@ -130,14 +169,14 @@ export default function AuthPage() {
       </div>
 
       {/* Feature callouts */}
-      <div className="flex flex-col md:flex-row gap-12 text-center absolute bottom-8 mx-auto">
+      <div className="hidden lg:flex lg:flex-row gap-12 text-center absolute bottom-8 mx-auto">
         <div className="flex items-center gap-6 max-w-md text-white">
           <HugeiconsIcon icon={FaceIdFreeIcons} className="w-10 h-10" />
           <div className="text-left space-y-1">
-            <h3 className="text-lg font-medium">Go Password-Free</h3>
+            <h3 className="text-lg font-medium">No Passwords Needed</h3>
             <p className=" text-zinc-200">
-              Sign in instantly using Face ID, without needing to enter a
-              password or SMS code.
+              Use Face ID to get in right away, no typing passwords or entering
+              SMS codes.
             </p>
           </div>
         </div>
@@ -147,8 +186,8 @@ export default function AuthPage() {
           <div className="text-left space-y-1">
             <h3 className="text-lg font-medium">Built-in Security</h3>
             <p className=" text-zinc-200">
-              Passkeys are securely stored on-device, protecting you against
-              threats like phishing.
+              Your passkeys stay safely on your device, shielding you from
+              phishing and similar attacks.
             </p>
           </div>
         </div>
@@ -161,8 +200,8 @@ export default function AuthPage() {
           <div className="text-left space-y-1">
             <h3 className="text-lg font-medium">Works Across Devices</h3>
             <p className=" text-zinc-200">
-              The system seamlessly syncs passkeys across devices, letting you
-              sign in from anywhere.
+              Passkeys sync across your devices so you can sign in from
+              anywhere.
             </p>
           </div>
         </div>

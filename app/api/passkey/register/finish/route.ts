@@ -3,9 +3,24 @@ import { getRPConfig } from "@/lib/webauthn";
 import { logAuditEvent, getClientIp, getUserAgent } from "@/lib/audit-logger";
 import { createClient } from "@supabase/supabase-js";
 import { createSessionCookie, createSessionToken } from "@/lib/session";
+import { checkRateLimit } from "@/lib/rate-limiter";
 import { NextResponse } from "next/server";
 
 export async function POST(request: Request) {
+  // Apply rate limiting for auth endpoints
+  const rateLimitResult = await checkRateLimit(request, "auth");
+  if (!rateLimitResult.success) {
+    return NextResponse.json(
+      { error: "Too many requests. Please try again later." },
+      {
+        status: 429,
+        headers: {
+          "Retry-After": rateLimitResult.retryAfter.toString(),
+          "X-RateLimit-Remaining": rateLimitResult.remaining.toString(),
+        },
+      }
+    );
+  }
   let userId: string | undefined;
 
   try {

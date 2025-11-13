@@ -18,6 +18,7 @@ import {
 import Link from "next/link";
 import { Badge } from "../ui/badge";
 import { Tooltip } from "../ui/tooltip";
+import { Loader2 } from "lucide-react";
 
 export default function SupplementDetail({
   params,
@@ -27,7 +28,13 @@ export default function SupplementDetail({
   const { id } = React.use(params);
   const { data, isLoading, error } = useSupplementById(id);
 
-  if (isLoading) return <div>Loading...</div>;
+  if (isLoading)
+    return (
+      <div className="flex flex-col items-center justify-center min-h-screen">
+        <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
+        <p className="text-gray-500 mt-2">Supplement details loading...</p>
+      </div>
+    );
   if (error) return <div>Error: {error.message}</div>;
   if (!data) return <div>No data found</div>;
 
@@ -46,21 +53,23 @@ export default function SupplementDetail({
   const dayBuckets = data.day_buckets || [];
 
   return (
-    <div className="flex flex-col items-center gap-4 min-h-screen p-12 bg-white">
+    <div className="flex flex-col items-center gap-4 min-h-screen p-4 py-12 md:p-12 bg-white">
       <div className="flex flex-col gap-8 max-w-4xl w-full">
         <div className="flex justify-start mb-4">
           <BackButton title="supplements" />
         </div>
         <div>
-          <div className="flex justify-between items-center gap-4">
-            <h1 className="text-3xl font-medium">{supplement.name}</h1>
+          <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+            <h1 className="md:text-3xl text-2xl font-medium">
+              {supplement.name}
+            </h1>
             <StatusBadge status={supplement.status} showIcon={true} />
           </div>
         </div>
-        <div className="grid grid-cols-3 gap-12">
-          <div className="col-span-2 space-y-6">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-12">
+          <div className="col-span-1 md:col-span-2 space-y-6">
             <div className="flex items-center gap-2">
-              <h2 className="text-xl font-medium">Adherence</h2>
+              <h2 className="md:text-xl text-lg font-medium">Adherence</h2>
               <Badge
                 label={`${safeAdherencePercentage.toFixed(0)} %`}
                 colorClass={adherenceColorClass.textColor}
@@ -103,7 +112,7 @@ export default function SupplementDetail({
             </div>
           </div>
           <div className="col-span-1 space-y-6">
-            <h2 className="text-xl font-medium">Details</h2>
+            <h2 className="md:text-xl text-lg font-medium">Details</h2>
             <div className="flex flex-col gap-8">
               {supplement.end_date ? (
                 <div className="text-gray-700 h-12 flex flex-col justify-between self-start whitespace-nowrap">

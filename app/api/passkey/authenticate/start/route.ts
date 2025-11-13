@@ -1,8 +1,24 @@
 import { generateAuthenticationOptions } from "@simplewebauthn/server";
 import { createClient } from "@supabase/supabase-js";
 import { getDefaultAuthenticationOptions, getRPConfig } from "@/lib/webauthn";
+import { checkRateLimit } from "@/lib/rate-limiter";
+import { NextResponse } from "next/server";
 
 export async function POST(request: Request) {
+  // Apply rate limiting for auth endpoints
+  const rateLimitResult = await checkRateLimit(request, "auth");
+  if (!rateLimitResult.success) {
+    return NextResponse.json(
+      { error: "Too many requests. Please try again later." },
+      {
+        status: 429,
+        headers: {
+          "Retry-After": rateLimitResult.retryAfter.toString(),
+          "X-RateLimit-Remaining": rateLimitResult.remaining.toString(),
+        },
+      }
+    );
+  }
   try {
     // Discoverable authentication: no userId required
 

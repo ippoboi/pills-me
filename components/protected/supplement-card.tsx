@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import type { KeyboardEvent } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { Medicine02FreeIcons } from "@hugeicons/core-free-icons";
@@ -170,37 +171,55 @@ export default function SupplementCard({
     }
   };
 
+  const handleCardKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
+    if (
+      event.key === "Enter" ||
+      event.key === " " ||
+      event.key === "Spacebar"
+    ) {
+      event.preventDefault();
+      if (
+        !(event.target as HTMLElement).closest(
+          "a, button, input, [role='button'], [role='checkbox']"
+        )
+      ) {
+        handleToggle();
+      }
+    }
+  };
+
   return (
     <div
+      role="button"
+      tabIndex={0}
+      onClick={(event) => {
+        if (
+          !(event.target as HTMLElement).closest(
+            "a, button, input, [role='button'], [role='checkbox']"
+          )
+        ) {
+          handleToggle();
+        }
+      }}
+      onKeyDown={handleCardKeyDown}
       className={cn(
-        "bg-white p-3 rounded-3xl lg:cursor-pointer lg:hover:bg-gray-50 transition-colors",
+        "bg-white p-2 md:p-3 rounded-3xl cursor-pointer transition-colors hover:bg-gray-50 active:bg-gray-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2",
         isTaken && "opacity-60"
       )}
     >
-      <div
-        className="flex items-center justify-between gap-4"
-        onClick={(e) => {
-          // Only trigger on desktop (lg+) and not when clicking links
-          if (
-            window.innerWidth >= 1024 &&
-            !(e.target as HTMLElement).closest("a")
-          ) {
-            handleToggle();
-          }
-        }}
-      >
+      <div className="flex items-center justify-between gap-4">
         {/* Left side: Icon, Name, Quantity */}
-        <div className="flex items-center gap-3  flex-1 min-w-0">
-          <div className="bg-blue-50 p-3 rounded-xl">
+        <div className="flex items-center gap-3 flex-1 min-w-0">
+          <div className="bg-blue-50 p-3 rounded-2xl md:rounded-xl">
             <HugeiconsIcon
               icon={Medicine02FreeIcons}
               strokeWidth={2}
               className="w-6 h-6 text-blue-600"
             />
           </div>
-          <div className="flex-1 grid grid-cols-4 justify-items-start items-center gap-1 min-w-0">
+          <div className="flex-1 grid grid-cols-2 md:grid-cols-4 justify-items-start items-center gap-1 min-w-0">
             <div className="flex flex-col">
-              <h3 className="font-medium text-gray-900 truncate">
+              <h3 className="text-[15px] md:text-base font-medium text-gray-900 truncate">
                 {supplement.name}
               </h3>
               {/* Show schedule indicator if supplement has multiple schedules for this time */}
@@ -217,12 +236,12 @@ export default function SupplementCard({
             </div>
 
             {/* Quantity Badge */}
-            <span className="px-1.5 bg-blue-600 justify-self-center text-white font-medium rounded-lg">
+            <span className="px-1.5 bg-blue-600 justify-self-end md:justify-self-center text-white font-medium rounded-lg text-sm md:text-base">
               x{supplement.capsules_per_take}
             </span>
 
             {/* Recommendation */}
-            <div className="flex flex-col">
+            <div className="hidden md:flex flex-col">
               <span className="text-xs text-gray-600 uppercase tracking-wide">
                 Recommendation
               </span>
@@ -230,7 +249,7 @@ export default function SupplementCard({
             </div>
 
             {/* Adherence */}
-            <div className="flex flex-col">
+            <div className="hidden md:flex flex-col">
               <span className="text-xs text-gray-600 uppercase tracking-wide">
                 Adherence
               </span>
@@ -248,7 +267,11 @@ export default function SupplementCard({
         </div>
 
         {/* Right side: Checkbox */}
-        <div className="p-3 flex items-center justify-center">
+        <div
+          className="p-3 flex items-center justify-center"
+          onClick={(event) => event.stopPropagation()}
+          onKeyDown={(event) => event.stopPropagation()}
+        >
           <Checkbox checked={isTaken} onCheckedChange={handleToggle} />
         </div>
       </div>

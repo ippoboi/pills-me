@@ -101,7 +101,7 @@ export default function ProtectedPage() {
   return (
     <SupplementLayout>
       <div className="min-h-screen">
-        <div className="max-w-4xl mx-auto overflow-visible">
+        <div className="max-w-4xl mx-auto overflow-visible px-4 md:px-8 lg:px-0">
           <div className="h-40" />
           {renderSupplementListContent(
             supplementsLoading,
