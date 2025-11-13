@@ -11,6 +11,7 @@ const buttonVariants = cva(
       variant: {
         default: "bg-blue-600 text-white hover:bg-blue-700",
         secondary: "bg-blue-50 text-blue-600 hover:bg-blue-100",
+        tertiary: "bg-gray-200 text-gray-500 hover:bg-gray-300",
         outline: "border border-gray-200 bg-white hover:bg-gray-50",
         "destructive-secondary": "bg-red-50 hover:bg-red-100 text-red-600",
       },
@@ -18,6 +19,8 @@ const buttonVariants = cva(
         default: "h-10 px-3 py-3",
         sm: "h-8 px-2 py-3",
         "default-no-icon": "h-10 px-3 py-3",
+        "width-fit-default": "h-10 px-2.5",
+        "width-fit-sm": "h-8 px-2",
       },
     },
     defaultVariants: {

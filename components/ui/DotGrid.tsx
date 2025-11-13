@@ -9,6 +9,7 @@ interface DotGridProps {
   containerWidth?: number | string;
   containerHeight?: number | string;
   absolute?: boolean;
+  fixed?: boolean;
   zIndex?: number;
   fillViewport?: boolean;
 }
@@ -20,6 +21,7 @@ const DotGrid: React.FC<DotGridProps> = ({
   containerWidth = "100%",
   containerHeight = "100%",
   absolute = false,
+  fixed = false,
   zIndex = -1000,
   fillViewport = false,
 }) => {
@@ -27,7 +29,7 @@ const DotGrid: React.FC<DotGridProps> = ({
   const svgRef = useRef<SVGSVGElement>(null);
 
   useEffect(() => {
-    if (fillViewport) {
+    if (fillViewport || fixed) {
       const updateDimensions = () => {
         setDimensions({
           width: window.innerWidth,
@@ -59,23 +61,25 @@ const DotGrid: React.FC<DotGridProps> = ({
         return () => resizeObserver.disconnect();
       }
     }
-  }, [fillViewport, absolute]);
+  }, [fillViewport, absolute, fixed]);
 
   // Calculate number of columns and rows based on container size
-  const actualWidth = fillViewport
-    ? dimensions.width
-    : typeof containerWidth === "number"
-    ? containerWidth
-    : containerWidth === "100%" && dimensions.width > 0
-    ? dimensions.width
-    : 800;
-  const actualHeight = fillViewport
-    ? dimensions.height
-    : typeof containerHeight === "number"
-    ? containerHeight
-    : containerHeight === "100%" && dimensions.height > 0
-    ? dimensions.height
-    : 600;
+  const actualWidth =
+    fillViewport || fixed
+      ? dimensions.width
+      : typeof containerWidth === "number"
+      ? containerWidth
+      : containerWidth === "100%" && dimensions.width > 0
+      ? dimensions.width
+      : 800;
+  const actualHeight =
+    fillViewport || fixed
+      ? dimensions.height
+      : typeof containerHeight === "number"
+      ? containerHeight
+      : containerHeight === "100%" && dimensions.height > 0
+      ? dimensions.height
+      : 600;
 
   const columns = Math.ceil(actualWidth / padding);
   const rows = Math.ceil(actualHeight / padding);
@@ -107,7 +111,14 @@ const DotGrid: React.FC<DotGridProps> = ({
       zIndex: zIndex,
       pointerEvents: "none",
     }),
-    ...(fillViewport && {
+    ...(fixed && {
+      position: "fixed",
+      top: 0,
+      left: 0,
+      zIndex: zIndex,
+      pointerEvents: "none",
+    }),
+    ...((fillViewport || fixed) && {
       width: "100vw",
       height: "100vh",
     }),
@@ -116,8 +127,8 @@ const DotGrid: React.FC<DotGridProps> = ({
   return (
     <svg
       ref={svgRef}
-      width={fillViewport ? "100vw" : containerWidth}
-      height={fillViewport ? "100vh" : containerHeight}
+      width={fillViewport || fixed ? "100vw" : containerWidth}
+      height={fillViewport || fixed ? "100vh" : containerHeight}
       viewBox={`0 0 ${viewWidth} ${viewHeight}`}
       version="1.1"
       style={svgStyle}

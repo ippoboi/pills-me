@@ -9,6 +9,7 @@ import {
 import { HugeiconsIcon } from "@hugeicons/react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { formatDateShort } from "@/lib/utils";
 
 type SupplementListItem = SupplementsListItem["items"][0];
 
@@ -16,19 +17,11 @@ interface SupplementListCardProps {
   item: SupplementListItem;
 }
 
-function formatDate(dateString: string) {
-  const d = new Date(dateString);
-  const month = d.toLocaleDateString("en-US", { month: "short" });
-  const day = d.getDate();
-  const year = d.getFullYear();
-  return `${month} ${day}, ${year}`;
-}
-
 export default function SupplementListCard({ item }: SupplementListCardProps) {
   const router = useRouter();
   const hasEndDate = item.end_date !== null;
-  const startDate = formatDate(item.start_date);
-  const endDate = item.end_date ? formatDate(item.end_date) : null;
+  const startDate = formatDateShort(item.start_date);
+  const endDate = item.end_date ? formatDateShort(item.end_date) : null;
 
   return (
     <div

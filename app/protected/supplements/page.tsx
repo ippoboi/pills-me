@@ -1,51 +1,74 @@
 "use client";
 
 import SupplementCreationForm from "@/components/supplement-creation-form";
-import { Button } from "@/components/ui/button";
-import { Add01FreeIcons } from "@hugeicons/core-free-icons";
-import { HugeiconsIcon } from "@hugeicons/react";
-import { useState } from "react";
 import { useSupplementsList } from "@/lib/hooks/supplements";
 import SupplementsListSection from "@/components/protected/supplements-list-section";
+import ListLoadingState from "@/components/protected/list-loading-state";
+import ListErrorState from "@/components/protected/list-error-state";
+import ListEmptyState from "@/components/protected/list-empty-state";
+import type { SupplementsListResponse } from "@/lib/types/supplements";
+import { useDateContext } from "@/lib/contexts/date-context";
+
+// Render supplement list content based on state
+function renderSupplementListContent(
+  isLoading: boolean,
+  error: Error | null,
+  data: SupplementsListResponse | undefined,
+  onTrackNew: () => void,
+  onRefetch: () => void
+) {
+  if (isLoading) {
+    return <ListLoadingState message="Loading supplements..." />;
+  }
+
+  if (error) {
+    return (
+      <ListErrorState
+        error={error}
+        onRefetch={onRefetch}
+        message="Error loading supplements"
+      />
+    );
+  }
+
+  if (!data?.supplements || data.supplements.length === 0) {
+    return (
+      <ListEmptyState
+        title="No supplements yet"
+        description="Start tracking your first supplement to get organized."
+        actionLabel="Track new"
+        onAction={onTrackNew}
+        showIllustration={true}
+      />
+    );
+  }
+
+  return <SupplementsListSection supplements={data.supplements} />;
+}
 
 export default function SupplementsPage() {
-  const [isFormOpen, setIsFormOpen] = useState(false);
-  const { data, isLoading, error } = useSupplementsList();
+  const { isFormOpen, setIsFormOpen } = useDateContext();
+  const { data, isLoading, error, refetch } = useSupplementsList();
 
   return (
-    <div>
-      <div className="p-8">
-        <div className="z-10 max-w-4xl mx-auto">
-          <div className="flex justify-between items-center mb-8">
-            <div>
-              <h1 className="text-3xl font-medium">Supplements</h1>
-              <p className="text-lg text-gray-600">
-                Manage all your supplements in one place
-              </p>
-            </div>
-            <Button variant="default" onClick={() => setIsFormOpen(true)}>
-              <HugeiconsIcon
-                icon={Add01FreeIcons}
-                strokeWidth={2}
-                className="w-4 h-4"
-              />
-              Track new
-            </Button>
-          </div>
+    <div className="min-h-screen">
+      <div className="max-w-4xl mx-auto overflow-visible">
+        <div className="h-40" />
 
-          <SupplementCreationForm
-            open={isFormOpen}
-            onClose={() => setIsFormOpen(false)}
-          />
+        <SupplementCreationForm
+          open={isFormOpen}
+          onClose={() => setIsFormOpen(false)}
+        />
 
-          {isLoading && <div className="text-gray-500">Loading...</div>}
-          {error && (
-            <div className="text-red-600">Failed to load supplements.</div>
-          )}
-          {data?.supplements && (
-            <SupplementsListSection supplements={data.supplements} />
-          )}
-        </div>
+        {renderSupplementListContent(
+          isLoading,
+          error,
+          data,
+          () => setIsFormOpen(true),
+          () => refetch()
+        )}
+
+        <div className="h-96" />
       </div>
     </div>
   );

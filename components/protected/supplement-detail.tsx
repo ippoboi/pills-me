@@ -4,7 +4,7 @@ import { useSupplementById } from "@/lib/hooks";
 import React from "react";
 import { BackButton } from "../ui/back-button";
 import { StatusBadge } from "../ui/status-badge";
-import { formatDate } from "date-fns";
+import { formatDateLong, formatDateShort } from "@/lib/utils";
 import {
   formatTimeOfDayList,
   getAdherenceColorClass,
@@ -90,7 +90,7 @@ export default function SupplementDetail({
                     content={
                       <div className="min-w-[180px]">
                         <div className="text-white text-base">
-                          {formatDate(bucket.date, "MMMM d, yyyy")}
+                          {formatDateLong(bucket.date)}
                         </div>
                         <div className={`mt-1 ${labelClass}`}>{label}</div>
                       </div>
@@ -111,12 +111,12 @@ export default function SupplementDetail({
                     Period
                   </span>
                   <span className="flex items-center gap-1">
-                    {formatDate(supplement.start_date, "MMM d, yyyy")}
+                    {formatDateShort(supplement.start_date)}
                     <HugeiconsIcon
                       icon={ArrowRight02FreeIcons}
                       className="w-4 h-4 text-gray-500"
                     />
-                    {formatDate(supplement.end_date, "MMM d, yyyy")}
+                    {formatDateShort(supplement.end_date)}
                   </span>
                 </div>
               ) : (
@@ -124,9 +124,7 @@ export default function SupplementDetail({
                   <span className="text-gray-500 uppercase text-sm">
                     Started
                   </span>
-                  <span>
-                    {formatDate(supplement.start_date, "MMM d, yyyy")}
-                  </span>
+                  <span>{formatDateShort(supplement.start_date)}</span>
                 </div>
               )}
               <div className="flex flex-col gap-1">

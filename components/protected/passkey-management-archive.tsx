@@ -5,6 +5,7 @@ import { startRegistration } from "@simplewebauthn/browser";
 
 import { Button } from "@/components/ui/button";
 import { createClient } from "@/lib/supabase/client";
+import { formatDateShort } from "@/lib/utils";
 import {
   Fingerprint,
   InfoIcon,
@@ -148,26 +149,10 @@ export function PasskeyManagementArchive({
                           )}
                       </p>
                       <p className="text-xs text-muted-foreground mt-1">
-                        Created:{" "}
-                        {new Date(passkey.createdAt).toLocaleDateString(
-                          "en-US",
-                          {
-                            year: "numeric",
-                            month: "short",
-                            day: "numeric",
-                          }
-                        )}
+                        Created: {formatDateShort(passkey.createdAt)}
                         {passkey.lastUsedAt && (
                           <span className="ml-3">
-                            Last used:{" "}
-                            {new Date(passkey.lastUsedAt).toLocaleDateString(
-                              "en-US",
-                              {
-                                year: "numeric",
-                                month: "short",
-                                day: "numeric",
-                              }
-                            )}
+                            Last used: {formatDateShort(passkey.lastUsedAt)}
                           </span>
                         )}
                       </p>

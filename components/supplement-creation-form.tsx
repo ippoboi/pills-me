@@ -7,9 +7,11 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
+import { BackdropPortal } from "@/components/ui/backdrop-portal";
 import { useCreateSupplement } from "@/lib/hooks";
 import { Database } from "@/lib/supabase/database.types";
 import { SupplementInput } from "@/lib/types";
+import { formatDateShort } from "@/lib/utils";
 import {
   Calendar04FreeIcons,
   Cancel01FreeIcons,
@@ -89,16 +91,6 @@ export default function SupplementCreationForm({
 
   // TanStack Query mutation
   const createSupplementMutation = useCreateSupplement();
-
-  // Helper function to format date as "Jan 15, 2025"
-  const formatDate = (date: Date | undefined): string => {
-    if (!date) return "";
-    return date.toLocaleDateString("en-US", {
-      month: "short",
-      day: "numeric",
-      year: "numeric",
-    });
-  };
 
   // Validation functions
   const validateFieldWithData = (
@@ -373,7 +365,6 @@ export default function SupplementCreationForm({
     if (open) {
       setShouldRender(true);
       resetForm(); // Reset form when opening
-      document.body.style.overflow = "hidden";
       // Trigger animation after mount
       setTimeout(() => setIsAnimating(true), 10);
     } else {
@@ -382,13 +373,9 @@ export default function SupplementCreationForm({
       // Delay unmount to allow exit animation to complete
       const timer = setTimeout(() => {
         setShouldRender(false);
-        document.body.style.overflow = "unset";
       }, 300); // Match transition duration
       return () => clearTimeout(timer);
     }
-    return () => {
-      document.body.style.overflow = "unset";
-    };
   }, [open]);
 
   // Sync dates with form data
@@ -456,22 +443,12 @@ export default function SupplementCreationForm({
   if (!shouldRender) return null;
 
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center"
-      onClick={onClose}
-    >
-      {/* Backdrop with black 20% opacity and backdrop blur */}
-      <div
-        className={`fixed inset-0 bg-black/20 backdrop-blur-sm transition-opacity duration-300 ease-out ${
-          isAnimating ? "opacity-100" : "opacity-0"
-        }`}
-      />
-
+    <BackdropPortal show={shouldRender} onClose={onClose}>
       {/* Dialog */}
       <MotionConfig transition={{ duration: 0.5, type: "spring", bounce: 0 }}>
         <motion.div
           animate={{ height: bounds.height }}
-          className={`relative z-50 w-full max-w-lg bg-white rounded-2xl overflow-hidden shadow-xl transition-all duration-300 ease-out ${
+          className={`relative w-full max-w-lg bg-white rounded-2xl overflow-hidden shadow-xl transition-all duration-300 ease-out ${
             isAnimating
               ? "opacity-100 translate-y-0"
               : "opacity-0 translate-y-4"
@@ -567,7 +544,7 @@ export default function SupplementCreationForm({
                                 }
                               >
                                 {startDate
-                                  ? formatDate(startDate)
+                                  ? formatDateShort(startDate)
                                   : "Select a start date"}
                               </span>
                               <div className="pointer-events-none bg-white rounded-[10px] h-9 w-9 border border-gray-200 absolute right-0.5 top-1/2 -translate-y-1/2 flex items-center justify-center">
@@ -667,7 +644,7 @@ export default function SupplementCreationForm({
                           formData.period_type !== "Custom" &&
                           endDate && (
                             <p className="text-sm text-gray-500 mt-1">
-                              End date: {formatDate(endDate)}
+                              End date: {formatDateShort(endDate)}
                             </p>
                           )}
                       </div>
@@ -692,7 +669,7 @@ export default function SupplementCreationForm({
                                 }
                               >
                                 {endDate
-                                  ? formatDate(endDate)
+                                  ? formatDateShort(endDate)
                                   : "Select end date"}
                               </span>
                               <div className="pointer-events-none bg-white rounded-[10px] h-9 w-9 border border-gray-200 absolute right-0.5 top-1/2 -translate-y-1/2 flex items-center justify-center">
@@ -1164,7 +1141,7 @@ export default function SupplementCreationForm({
           </div>
         </motion.div>
       </MotionConfig>
-    </div>
+    </BackdropPortal>
   );
 }
 

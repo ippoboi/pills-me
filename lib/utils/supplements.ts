@@ -68,11 +68,12 @@ export async function calculateAdherenceProgress(
     startDate,
     endDate,
     referenceDate,
+    timezone,
   });
 
-  // Use reference date or today (ensure YYYY-MM-DD format)
-  const today =
-    referenceDate || formatUTCToLocalDate(new Date().toISOString(), timezone);
+  // Always use today for adherence calculation, regardless of reference date
+  const today = formatUTCToLocalDate(new Date().toISOString(), timezone);
+  const viewingDate = referenceDate || today;
 
   // Convert timestamps to date strings if needed
   const normalizedStartDate = startDate.includes("T")
@@ -86,6 +87,7 @@ export async function calculateAdherenceProgress(
 
   console.log("📅 [ADHERENCE DEBUG] Date processing:", {
     originalReferenceDate: referenceDate,
+    viewingDate: viewingDate,
     calculatedToday: today,
     originalStartDate: startDate,
     normalizedStartDate,
@@ -255,6 +257,9 @@ export async function calculateAdherenceProgress(
     totalPossibleSchedules,
     adherencePercentage,
     calculation: `${actualAdherence}/${totalPossibleSchedules} * 100 = ${adherencePercentage}%`,
+    dateRange: `${normalizedStartDate} to ${today} (always to today)`,
+    viewingDate: viewingDate,
+    queryRange: `${startTimestamp} to ${calculationEndTimestamp}`,
   });
 
   return {

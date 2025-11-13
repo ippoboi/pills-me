@@ -7,7 +7,5 @@ export function ConditionalDotGrid() {
   const pathname = usePathname();
   const isSupplementDetail = /^\/protected\/supplements\/[^/]+$/.test(pathname);
 
-  return isSupplementDetail ? null : (
-    <DotGrid fillViewport absolute zIndex={0} />
-  );
+  return isSupplementDetail ? null : <DotGrid fillViewport fixed zIndex={0} />;
 }
