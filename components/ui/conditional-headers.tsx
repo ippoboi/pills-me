@@ -10,8 +10,8 @@ export function ConditionalHeaders() {
   const dateContext = useDateContext();
 
   // Determine which header to show based on the current route
-  const isTodosPage = pathname === "/protected";
-  const isSupplementsPage = pathname === "/protected/supplements";
+  const isTodosPage = pathname === "/todos";
+  const isSupplementsPage = pathname === "/supplements";
 
   if (isTodosPage) {
     return (

@@ -3,6 +3,7 @@ import { ConditionalHeaders } from "@/components/ui/conditional-headers";
 import { ConditionalNavigation } from "@/components/ui/conditional-navigation";
 import { ConditionalProgressiveBlur } from "@/components/ui/conditional-progressive-blur";
 import { DateProvider } from "@/lib/contexts/date-context";
+import { SupplementToolsProvider } from "@/lib/contexts/supplement-tools-context";
 
 function LayoutContent({ children }: { children: React.ReactNode }) {
   return (
@@ -25,7 +26,9 @@ export default function ProtectedLayout({
 }) {
   return (
     <DateProvider>
-      <LayoutContent>{children}</LayoutContent>
+      <SupplementToolsProvider>
+        <LayoutContent>{children}</LayoutContent>
+      </SupplementToolsProvider>
     </DateProvider>
   );
 }

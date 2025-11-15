@@ -448,7 +448,7 @@ export default function SupplementCreationForm({
       <MotionConfig transition={{ duration: 0.5, type: "spring", bounce: 0 }}>
         <motion.div
           animate={{ height: bounds.height }}
-          className={`relative w-full max-w-lg bg-white rounded-2xl overflow-hidden shadow-xl transition-all duration-300 ease-out ${
+          className={`relative w-full md:max-w-lg bg-white rounded-2xl overflow-hidden shadow-xl transition-all duration-300 ease-out ${
             isAnimating
               ? "opacity-100 translate-y-0"
               : "opacity-0 translate-y-4"
@@ -459,11 +459,11 @@ export default function SupplementCreationForm({
             {/* Header */}
             <motion.div
               layout
-              className="flex items-center justify-between p-5 py-4 bg-gray-50 border-b border-b-gray-200"
+              className="flex items-center w-80 md:w-full justify-between p-5 py-4 bg-gray-50 border-b border-b-gray-200"
             >
               <h2 className="font-medium">Add a supplement</h2>
               {/* Progress indicator */}
-              <div className="flex gap-2 w-1/3">
+              <div className="flex gap-2 w-1/5 md:w-1/3">
                 <div
                   className={`h-1 flex-1 rounded-full ${
                     currentStep >= 1 ? "bg-blue-600" : "bg-gray-200"

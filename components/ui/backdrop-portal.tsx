@@ -55,7 +55,7 @@ export function BackdropPortal({
       />
 
       {/* Modal content */}
-      <div className="relative z-10 max-h-[90vh] max-w-[90vw] overflow-auto">
+      <div className="relative z-10 max-h-screen md:max-h-[90vh] max-w-screen md:max-w-[90vw] overflow-auto">
         {children}
       </div>
     </div>

@@ -2,6 +2,7 @@
 
 import { useSupplementById } from "@/lib/hooks";
 import React from "react";
+import { useSupplementTools } from "@/lib/contexts/supplement-tools-context";
 import { BackButton } from "../ui/back-button";
 import { StatusBadge } from "../ui/status-badge";
 import { formatDateLong, formatDateShort } from "@/lib/utils";
@@ -14,11 +15,13 @@ import { HugeiconsIcon } from "@hugeicons/react";
 import {
   ArrowRight02FreeIcons,
   ArrowUpRight03FreeIcons,
+  Download01FreeIcons,
 } from "@hugeicons/core-free-icons";
 import Link from "next/link";
 import { Badge } from "../ui/badge";
 import { Tooltip } from "../ui/tooltip";
 import { Loader2 } from "lucide-react";
+import { Button } from "../ui/button";
 
 export default function SupplementDetail({
   params,
@@ -27,6 +30,17 @@ export default function SupplementDetail({
 }) {
   const { id } = React.use(params);
   const { data, isLoading, error } = useSupplementById(id);
+  const { setCurrentSupplement } = useSupplementTools();
+
+  // Set current supplement when data loads
+  React.useEffect(() => {
+    if (data) {
+      setCurrentSupplement(data);
+    }
+    return () => {
+      setCurrentSupplement(null);
+    };
+  }, [data, setCurrentSupplement]);
 
   if (isLoading)
     return (
@@ -54,7 +68,7 @@ export default function SupplementDetail({
 
   return (
     <div className="flex flex-col items-center gap-4 min-h-screen p-4 py-12 md:p-12 bg-white">
-      <div className="flex flex-col gap-8 max-w-4xl w-full">
+      <div className="flex flex-col gap-12 md:gap-8 max-w-4xl w-full">
         <div className="flex justify-start mb-4">
           <BackButton title="supplements" />
         </div>
@@ -66,15 +80,25 @@ export default function SupplementDetail({
             <StatusBadge status={supplement.status} showIcon={true} />
           </div>
         </div>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-12">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-12 mb-20 md:mb-0">
           <div className="col-span-1 md:col-span-2 space-y-6">
-            <div className="flex items-center gap-2">
-              <h2 className="md:text-xl text-lg font-medium">Adherence</h2>
-              <Badge
-                label={`${safeAdherencePercentage.toFixed(0)} %`}
-                colorClass={adherenceColorClass.textColor}
-                backgroundClass={adherenceColorClass.backgroundColor}
-              />
+            <div className="flex justify-between items-center">
+              <div className="flex items-center gap-2">
+                <h2 className="md:text-xl text-lg font-medium">Adherence</h2>
+                <Badge
+                  label={`${safeAdherencePercentage.toFixed(0)} %`}
+                  colorClass={adherenceColorClass.textColor}
+                  backgroundClass={adherenceColorClass.backgroundColor}
+                />
+              </div>
+              <Button variant={"secondary"} size="sm">
+                <HugeiconsIcon
+                  icon={Download01FreeIcons}
+                  strokeWidth={2}
+                  className="w-4 h-4"
+                />
+                Export
+              </Button>
             </div>
             <div className="flex items-center gap-4 flex-wrap">
               {dayBuckets.map((bucket, index: number) => {

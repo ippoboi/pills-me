@@ -7,7 +7,7 @@ import { AddSupplementMobileButton } from "./add-supplement-mobile";
 
 export function ConditionalNavigation() {
   const pathname = usePathname();
-  const isSupplementDetail = /^\/protected\/supplements\/[^/]+$/.test(pathname);
+  const isSupplementDetail = /^\/supplements\/[^/]+$/.test(pathname);
 
   return isSupplementDetail ? (
     <SupplementTools />

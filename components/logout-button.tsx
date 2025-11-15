@@ -20,7 +20,11 @@ export function LogoutButton() {
   };
 
   return (
-    <Button onClick={logout} variant="destructive-secondary">
+    <Button
+      onClick={logout}
+      variant="destructive-secondary"
+      className="w-full md:w-auto"
+    >
       <HugeiconsIcon
         icon={LogoutSquare01FreeIcons}
         strokeWidth={2}

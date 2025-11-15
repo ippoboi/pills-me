@@ -26,7 +26,7 @@ export default function AuthPage() {
         if (res.ok) {
           const data = await res.json();
           if (data?.id) {
-            router.push("/protected");
+            router.push("/todos");
           }
         }
       } catch {}
@@ -35,7 +35,7 @@ export default function AuthPage() {
   }, [router]);
 
   const handleCreatePasskey = () => {
-    router.push("/auth/onboarding");
+    router.push("/onboarding");
   };
 
   const handleUseExistingPasskey = async () => {
@@ -63,7 +63,7 @@ export default function AuthPage() {
       }
       const result = await finishResp.json();
       if (result.verified) {
-        router.push("/protected");
+        router.push("/todos");
         return;
       }
       throw new Error("Passkey authentication failed");
@@ -80,10 +80,12 @@ export default function AuthPage() {
       <div className="p-4 md:p-0 max-w-md w-full space-y-8 mx-auto text-center">
         <div className="flex flex-col items-center gap-2">
           {/* Fingerprint icon */}
-          <Fingerprint className="w-16 h-16 text-white mb-6" strokeWidth={1} />
+          <Fingerprint className="w-16 h-16 text-white mb-4" strokeWidth={1} />
 
-          <h1 className="text-3xl font-medium text-white">Easy Sign In</h1>
-          <p className="text-zinc-200 text-lg max-w-[220px] md:max-w-none">
+          <h1 className="md:text-3xl text-2xl font-medium text-white">
+            Easy Sign In
+          </h1>
+          <p className="text-zinc-200 md:text-lg text-base max-w-[220px] md:max-w-none">
             Passkeys offer a quick, secure way to log in.
           </p>
         </div>

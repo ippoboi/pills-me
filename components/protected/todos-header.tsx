@@ -27,7 +27,7 @@ const TodosHeader = memo(function TodosHeader({
   isToday,
 }: TodosHeaderProps) {
   return (
-    <div className="fixed top-0 left-0 right-0 z-50 p-4 pt-12 md:p-8">
+    <div className="fixed top-0 left-0 right-0 z-50 p-4 pt-6 md:p-8">
       <div className="max-w-4xl mx-auto flex justify-between items-center gap-4 mb-8">
         <div>
           <h1 className="md:text-3xl text-2xl font-medium">To Do&apos;s</h1>

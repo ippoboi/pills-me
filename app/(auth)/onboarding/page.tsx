@@ -104,7 +104,7 @@ export default function OnboardingPage() {
         setShowFakeLoading(true);
         setIsLoading(false);
         fakeLoadingTimeoutRef.current = setTimeout(() => {
-          router.push("/protected");
+          router.push("/");
         }, 2000);
         return;
       } else {

@@ -42,8 +42,8 @@ export default function ProfilePage() {
 
   return (
     <div className="mx-auto min-h-screen flex items-center justify-center px-4">
-      <div className="flex flex-col w-full max-w-xl md:flex-row items-center justify-between gap-4 bg-white p-6 md:p-8 rounded-[32px] shadow-sm">
-        <div className="flex flex-row items-center justify-center gap-4">
+      <div className="flex w-full max-w-xl flex-col md:flex-row gap-8 md:gap-4 items-start md:items-center justify-between bg-white p-6 md:p-8 rounded-[32px] shadow-sm">
+        <div className="flex items-center justify-center gap-4">
           <Avatar className="w-16 h-16">
             <AvatarImage src={user?.avatarUrl || ""} />
             <AvatarFallback>{initials}</AvatarFallback>
@@ -63,7 +63,7 @@ export default function ProfilePage() {
             </h1>
           </div>
         </div>
-        <div className="flex flex-col md:flex-row items-center justify-center gap-4">
+        <div className="flex flex-rows items-center justify-center gap-4">
           <Button variant="secondary">
             <HugeiconsIcon
               icon={Edit04FreeIcons}

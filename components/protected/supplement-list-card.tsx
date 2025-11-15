@@ -25,7 +25,7 @@ export default function SupplementListCard({ item }: SupplementListCardProps) {
   const endDate = item.end_date ? formatDateShort(item.end_date) : null;
 
   const navigateToSupplement = () => {
-    router.push(`/protected/supplements/${item.id}`);
+    router.push(`/supplements/${item.id}`);
   };
 
   const handleCardClick = (event: MouseEvent<HTMLDivElement>) => {
@@ -63,7 +63,7 @@ export default function SupplementListCard({ item }: SupplementListCardProps) {
           className="w-6 h-6 text-blue-600"
         />
       </div>
-      <div className="grid grid-cols-2 md:grid-cols-[200px_250px_auto_auto] items-center gap-6 w-full min-w-0">
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-[200px_250px_auto_auto] items-center gap-6 w-full min-w-0">
         {/* Name */}
         <h3 className="font-medium text-gray-900 min-w-0 text-[15px] md:text-base">
           {item.name}
@@ -85,7 +85,7 @@ export default function SupplementListCard({ item }: SupplementListCardProps) {
 
         {/* Source */}
         {item.source_name ? (
-          <div className="h-12 hidden md:flex flex-col justify-between text-gray-600 whitespace-nowrap">
+          <div className="h-12 hidden lg:flex flex-col justify-between text-gray-600 whitespace-nowrap">
             <p className="uppercase text-sm text-gray-500">Source</p>
             {item.source_url ? (
               <Link

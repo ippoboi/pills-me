@@ -14,17 +14,17 @@ const tabs: {
   {
     label: "Today",
     icon: Sun01FreeIcons,
-    href: "/protected",
+    href: "/todos",
   },
   {
     label: "Supplements",
     icon: GivePillFreeIcons,
-    href: "/protected/supplements",
+    href: "/supplements",
   },
   {
     label: "Profile",
     icon: null,
-    href: "/protected/profile",
+    href: "/profile",
   },
 ];
 

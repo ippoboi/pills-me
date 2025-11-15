@@ -178,11 +178,12 @@ export default function SupplementCard({
       event.key === "Spacebar"
     ) {
       event.preventDefault();
-      if (
-        !(event.target as HTMLElement).closest(
-          "a, button, input, [role='button'], [role='checkbox']"
-        )
-      ) {
+      // Only prevent card keyboard toggle if focus is on checkbox or its wrapper
+      const target = event.target as HTMLElement;
+      const isCheckboxFocus =
+        target.closest("[data-checkbox-wrapper]") !== null;
+
+      if (!isCheckboxFocus) {
         handleToggle();
       }
     }
@@ -193,11 +194,12 @@ export default function SupplementCard({
       role="button"
       tabIndex={0}
       onClick={(event) => {
-        if (
-          !(event.target as HTMLElement).closest(
-            "a, button, input, [role='button'], [role='checkbox']"
-          )
-        ) {
+        // Only prevent card click if clicking directly on checkbox or its wrapper
+        const target = event.target as HTMLElement;
+        const isCheckboxClick =
+          target.closest("[data-checkbox-wrapper]") !== null;
+
+        if (!isCheckboxClick) {
           handleToggle();
         }
       }}
@@ -268,6 +270,7 @@ export default function SupplementCard({
 
         {/* Right side: Checkbox */}
         <div
+          data-checkbox-wrapper
           className="p-3 flex items-center justify-center"
           onClick={(event) => event.stopPropagation()}
           onKeyDown={(event) => event.stopPropagation()}
