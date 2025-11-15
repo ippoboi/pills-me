@@ -239,6 +239,21 @@ export async function PUT(
       );
     }
 
+    // Explicitly reject inventory fields - they should only be updated via refill endpoint
+    if (
+      body.inventory_total !== undefined ||
+      body.low_inventory_threshold !== undefined
+    ) {
+      return NextResponse.json(
+        {
+          error: "Bad Request",
+          message:
+            "inventory_total and low_inventory_threshold cannot be updated via PUT. Use the refill endpoint for inventory management.",
+        },
+        { status: 400 }
+      );
+    }
+
     // Check if supplement exists and user owns it
     const { data: existingSupplement, error: existingError } = await supabase
       .from("supplements")
@@ -280,10 +295,6 @@ export async function PUT(
         fieldsToValidate.source_name = body.source_name;
       if (body.source_url !== undefined)
         fieldsToValidate.source_url = body.source_url;
-      if (body.inventory_total !== undefined)
-        fieldsToValidate.inventory_total = body.inventory_total;
-      if (body.low_inventory_threshold !== undefined)
-        fieldsToValidate.low_inventory_threshold = body.low_inventory_threshold;
 
       // Only validate if we have fields that need validation
       if (
@@ -330,10 +341,6 @@ export async function PUT(
     if (body.start_date !== undefined) updateData.start_date = body.start_date;
     if (body.end_date !== undefined)
       updateData.end_date = body.end_date || undefined;
-    if (body.inventory_total !== undefined)
-      updateData.inventory_total = body.inventory_total;
-    if (body.low_inventory_threshold !== undefined)
-      updateData.low_inventory_threshold = body.low_inventory_threshold;
 
     // Update supplement if there are fields to update
     if (Object.keys(updateData).length > 0) {
@@ -528,6 +535,10 @@ export async function DELETE(
     return NextResponse.json({
       success: true,
       message: "Supplement deleted successfully",
+      supplement: {
+        id: existingSupplement.id,
+        name: existingSupplement.name,
+      },
     });
   } catch (error) {
     console.error("Unexpected error in supplement deletion:", error);

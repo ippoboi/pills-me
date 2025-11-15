@@ -158,3 +158,53 @@ export interface SupplementResponse {
     marked_at: string;
   }>;
 }
+
+// -----------------------------------------------------------------------------
+// Mutation Response Types
+// -----------------------------------------------------------------------------
+
+export interface EditSupplementResponse {
+  success: boolean;
+  supplement: {
+    id: string;
+    name: string;
+    capsules_per_take: number;
+    recommendation: string | null;
+    reason: string | null;
+    source_name: string | null;
+    source_url: string | null;
+    start_date: string;
+    end_date: string | null;
+    status: SupplementStatus;
+    created_at: string;
+    updated_at: string;
+    schedules: Array<{
+      id: string;
+      time_of_day: TimeOfDay;
+    }>;
+  };
+}
+
+export interface SoftDeleteSupplementResponse {
+  success: boolean;
+  message: string;
+  supplement: {
+    id: string;
+    name: string;
+  };
+}
+
+export interface RefillSupplementResponse {
+  success: boolean;
+  message: string;
+  supplement: {
+    id: string;
+    name: string;
+    inventory_total: number | null;
+  };
+  refill_details: {
+    refill_amount: number;
+    previous_inventory: number;
+    new_inventory: number;
+  };
+}

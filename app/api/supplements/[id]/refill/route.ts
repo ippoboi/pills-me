@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { authenticateRequest } from "@/lib/auth-helper";
 
 interface RefillRequest {
-  inventory_amount: number;
+  refill_amount: number; // Amount to add to existing inventory
 }
 
 export async function POST(
@@ -43,16 +43,16 @@ export async function POST(
       );
     }
 
-    // Validate inventory amount
+    // Validate refill amount
     if (
-      typeof body.inventory_amount !== "number" ||
-      body.inventory_amount < 0 ||
-      !Number.isInteger(body.inventory_amount)
+      typeof body.refill_amount !== "number" ||
+      body.refill_amount <= 0 ||
+      !Number.isInteger(body.refill_amount)
     ) {
       return NextResponse.json(
         {
           error: "Bad Request",
-          message: "inventory_amount must be a non-negative integer",
+          message: "refill_amount must be a positive integer",
         },
         { status: 400 }
       );
@@ -89,12 +89,16 @@ export async function POST(
       );
     }
 
+    // Calculate new inventory total by adding refill amount to current inventory
+    const currentInventory = existingSupplement.inventory_total ?? 0;
+    const newInventoryTotal = currentInventory + body.refill_amount;
+
     // Update inventory
     const { data: updatedSupplement, error: updateError } = await supabase
       .from("supplements")
-      .update({ inventory_total: body.inventory_amount })
+      .update({ inventory_total: newInventoryTotal })
       .eq("id", supplementId)
-      .select("inventory_total")
+      .select("id, name, inventory_total")
       .single();
 
     if (updateError) {
@@ -111,8 +115,17 @@ export async function POST(
 
     return NextResponse.json({
       success: true,
-      message: "Inventory updated successfully",
-      inventory_total: updatedSupplement.inventory_total,
+      message: "Inventory refilled successfully",
+      supplement: {
+        id: updatedSupplement.id,
+        name: updatedSupplement.name,
+        inventory_total: updatedSupplement.inventory_total,
+      },
+      refill_details: {
+        refill_amount: body.refill_amount,
+        previous_inventory: currentInventory,
+        new_inventory: newInventoryTotal,
+      },
     });
   } catch (error) {
     console.error("Unexpected error in refill:", error);
