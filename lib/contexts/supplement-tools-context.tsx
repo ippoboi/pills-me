@@ -1,14 +1,19 @@
 "use client";
 
 import React, { createContext, useContext, useState } from "react";
-import { SupplementResponse } from "@/lib/types/supplements";
+import { SupplementResponse, SupplementInput } from "@/lib/types/supplements";
+import {
+  useEditSupplement,
+  useSoftDeleteSupplement,
+  useRefillSupplement,
+} from "../hooks";
 
 interface SupplementToolsContextType {
   currentSupplement: SupplementResponse | null;
   setCurrentSupplement: (supplement: SupplementResponse | null) => void;
-  handleEdit: (supplementId: string) => void;
+  handleEdit: (supplementId: string, data?: Partial<SupplementInput>) => void;
   handleDelete: (supplementId: string) => void;
-  handleRefill: (supplementId: string) => void;
+  handleRefill: (supplementId: string, amount: number) => void;
   handleNewCycle: (supplementId: string) => void;
 }
 
@@ -24,19 +29,29 @@ export function SupplementToolsProvider({
   const [currentSupplement, setCurrentSupplement] =
     useState<SupplementResponse | null>(null);
 
-  const handleEdit = (supplementId: string) => {
-    // TODO: Implement edit functionality
-    console.log("Edit supplement:", supplementId);
+  // Initialize hooks at the top level
+  const { mutate: editSupplement } = useEditSupplement();
+  const { mutate: deleteSupplement } = useSoftDeleteSupplement();
+  const { mutate: refillSupplement } = useRefillSupplement();
+
+  const handleEdit = (
+    supplementId: string,
+    data?: Partial<SupplementInput>
+  ) => {
+    if (data) {
+      editSupplement({ supplementId, data });
+    } else {
+      // TODO: Open edit form/modal to collect data
+      console.log("Edit supplement:", supplementId, "- data collection needed");
+    }
   };
 
   const handleDelete = (supplementId: string) => {
-    // TODO: Implement delete functionality
-    console.log("Delete supplement:", supplementId);
+    deleteSupplement(supplementId);
   };
 
-  const handleRefill = (supplementId: string) => {
-    // TODO: Implement refill functionality
-    console.log("Refill supplement:", supplementId);
+  const handleRefill = (supplementId: string, amount: number) => {
+    refillSupplement({ supplementId, amount });
   };
 
   const handleNewCycle = (supplementId: string) => {

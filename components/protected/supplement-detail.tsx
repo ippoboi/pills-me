@@ -22,6 +22,14 @@ import { Badge } from "../ui/badge";
 import { Tooltip } from "../ui/tooltip";
 import { Loader2 } from "lucide-react";
 import { Button } from "../ui/button";
+import { mkConfig, generateCsv, download } from "export-to-csv";
+
+// mkConfig merges your options with the defaults
+// and returns WithDefaults<ConfigOptions>
+const csvConfig = mkConfig({
+  useKeysAsHeaders: true,
+  filename: "supplement-adherence-data",
+});
 
 export default function SupplementDetail({
   params,
@@ -41,6 +49,12 @@ export default function SupplementDetail({
       setCurrentSupplement(null);
     };
   }, [data, setCurrentSupplement]);
+
+  const handleExport = () => {
+    const csv = generateCsv(csvConfig)(data?.recent_adherence || []);
+
+    download(csvConfig)(csv);
+  };
 
   if (isLoading)
     return (
@@ -91,7 +105,7 @@ export default function SupplementDetail({
                   backgroundClass={adherenceColorClass.backgroundColor}
                 />
               </div>
-              <Button variant={"secondary"} size="sm">
+              <Button variant={"secondary"} size="sm" onClick={handleExport}>
                 <HugeiconsIcon
                   icon={Download01FreeIcons}
                   strokeWidth={2}

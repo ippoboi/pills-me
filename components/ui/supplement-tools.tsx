@@ -68,7 +68,8 @@ export function SupplementTools() {
             <button
               onClick={() =>
                 currentSupplement &&
-                handleRefill(currentSupplement.supplement.id)
+                // TODO IMPLEMENT REFILL AMOUNT MODAL
+                handleRefill(currentSupplement.supplement.id, 10)
               }
               className="cursor-pointer gap-1 transition-all bg-white hover:bg-white/80 px-3 h-12 text-blue-600 rounded-2xl flex items-center"
             >

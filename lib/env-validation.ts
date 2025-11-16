@@ -76,6 +76,16 @@ const REQUIRED_ENV_VARS = {
     },
     description: "Must be valid URL(s), comma-separated if multiple",
   },
+  NEXT_PUBLIC_VAPID_PUBLIC_KEY: {
+    required: true,
+    validator: (value: string) => value.length > 0,
+    description: "Must be a valid VAPID public key",
+  },
+  VAPID_PRIVATE_KEY: {
+    required: true,
+    validator: (value: string) => value.length > 0,
+    description: "Must be a valid VAPID private key",
+  },
 } as const;
 
 /**

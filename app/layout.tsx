@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Geist } from "next/font/google";
 import { ThemeProvider } from "next-themes";
 import "./globals.css";
@@ -19,8 +19,17 @@ const defaultUrl = process.env.VERCEL_URL
 
 export const metadata: Metadata = {
   metadataBase: new URL(defaultUrl),
-  title: "PillsMe",
-  description: "PillsMe is a platform for tracking your supplements.",
+  title: "Pillker",
+  description: "Pillker is a platform for tracking your supplements.",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "default",
+    title: "Pillker",
+  },
+};
+
+export const viewport: Viewport = {
+  themeColor: "#fff",
 };
 
 const geistSans = Geist({

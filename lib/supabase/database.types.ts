@@ -50,6 +50,42 @@ export type Database = {
         }
         Relationships: []
       }
+      notification_preferences: {
+        Row: {
+          achievement_notifications_enabled: boolean
+          created_at: string
+          id: string
+          refill_reminders_enabled: boolean
+          reminder_times: Json | null
+          supplement_reminders_enabled: boolean
+          system_notifications_enabled: boolean
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          achievement_notifications_enabled?: boolean
+          created_at?: string
+          id?: string
+          refill_reminders_enabled?: boolean
+          reminder_times?: Json | null
+          supplement_reminders_enabled?: boolean
+          system_notifications_enabled?: boolean
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          achievement_notifications_enabled?: boolean
+          created_at?: string
+          id?: string
+          refill_reminders_enabled?: boolean
+          reminder_times?: Json | null
+          supplement_reminders_enabled?: boolean
+          system_notifications_enabled?: boolean
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       passkey_challenges: {
         Row: {
           challenge: string
@@ -128,6 +164,36 @@ export type Database = {
           user_display_name?: string | null
           user_id?: string
           user_name?: string | null
+        }
+        Relationships: []
+      }
+      push_subscriptions: {
+        Row: {
+          created_at: string
+          endpoint: string
+          id: string
+          subscription_data: Json
+          updated_at: string
+          user_agent: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          endpoint: string
+          id?: string
+          subscription_data: Json
+          updated_at?: string
+          user_agent?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          endpoint?: string
+          id?: string
+          subscription_data?: Json
+          updated_at?: string
+          user_agent?: string | null
+          user_id?: string
         }
         Relationships: []
       }

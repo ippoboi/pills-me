@@ -11,6 +11,7 @@ import SupplementCreationForm from "@/components/supplement-creation-form";
 import { useTodaySupplements } from "@/lib/hooks";
 import type { TodaySupplementsResponse } from "@/lib/types";
 import { useDateContext } from "@/lib/contexts/date-context";
+import InstallPrompt from "@/components/pwa/install-prompts";
 
 // Reusable centered layout wrapper
 interface SupplementLayoutProps {
@@ -23,6 +24,7 @@ function SupplementLayout({ children }: SupplementLayoutProps) {
   return (
     <>
       {children}
+      <InstallPrompt />
       <SupplementCreationForm
         open={isFormOpen}
         onClose={() => setIsFormOpen(false)}
