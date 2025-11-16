@@ -82,7 +82,7 @@ export default function SupplementDetail({
 
   return (
     <div className="flex flex-col items-center gap-4 min-h-screen p-4 py-12 md:p-12 bg-white">
-      <div className="flex flex-col gap-12 md:gap-8 max-w-4xl w-full">
+      <div className="flex flex-col gap-12 md:gap-8 md:max-w-4xl w-full">
         <div className="flex justify-start mb-4">
           <BackButton title="supplements" />
         </div>
