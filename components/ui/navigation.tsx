@@ -3,8 +3,9 @@
 import { GivePillFreeIcons, Sun01FreeIcons } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon, HugeiconsIconProps } from "@hugeicons/react";
 import { Avatar, AvatarFallback, AvatarImage } from "./avatar";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
+import { useCurrentUser } from "@/lib/hooks";
 
 const tabs: {
   label: string;
@@ -29,6 +30,7 @@ const tabs: {
 ];
 
 export function Navigation() {
+  const { data: user } = useCurrentUser();
   const pathname = usePathname();
   const router = useRouter();
   const resolveActiveFromPath = (path: string | null) => {
@@ -81,6 +83,18 @@ export function Navigation() {
     return () => window.removeEventListener("resize", handleResize);
   }, []);
 
+  const initials = useMemo(() => {
+    const source = user?.displayName;
+    if (!source) return "U";
+    const parts = source
+      .split(/\s+/)
+      .filter(Boolean)
+      .map((segment) => segment[0]?.toUpperCase())
+      .slice(0, 2)
+      .join("");
+    return parts || "U";
+  }, [user?.displayName]);
+
   return (
     <div
       className="shadow-2xl shadow-gray-200 rounded-[22px] border border-gray-200 bg-gray-100 p-1"
@@ -111,16 +125,9 @@ export function Navigation() {
                 {tab.icon ? (
                   <HugeiconsIcon icon={tab.icon} className="h-8 w-8" />
                 ) : (
-                  <Avatar
-                    className={
-                      `border transition-colors duration-300 ` +
-                      (activeHref === tab.href
-                        ? "border-blue-600"
-                        : "border-gray-300")
-                    }
-                  >
-                    <AvatarImage src="/avatar.jpg" />
-                    <AvatarFallback>DD</AvatarFallback>
+                  <Avatar className="bg-blue-100 text-blue-600 grayscale">
+                    <AvatarImage src={user?.avatarUrl || ""} />
+                    <AvatarFallback>{initials}</AvatarFallback>
                   </Avatar>
                 )}
               </button>
@@ -148,9 +155,9 @@ export function Navigation() {
                   {tab.icon ? (
                     <HugeiconsIcon icon={tab.icon} className="h-8 w-8" />
                   ) : (
-                    <Avatar className="border border-blue-600 transition-colors duration-300">
-                      <AvatarImage src="/avatar.jpg" />
-                      <AvatarFallback>DD</AvatarFallback>
+                    <Avatar className="bg-blue-50 border border-blue-600 transition-colors duration-300">
+                      <AvatarImage src={user?.avatarUrl || ""} />
+                      <AvatarFallback>{initials}</AvatarFallback>
                     </Avatar>
                   )}
                 </div>

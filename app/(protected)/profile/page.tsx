@@ -145,7 +145,7 @@ export default function ProfilePage() {
             <h2 className="uppercase text-gray-500">Notifications</h2>
             <div className="flex w-full flex-col gap-4 items-start">
               <div className="flex justify-between items-center w-full">
-                <p className="text-gray-600 md:text-xl">All</p>
+                <p className="text-gray-600 md:text-lg">All</p>
                 <Switch
                   checked={preferences?.system_notifications_enabled ?? true}
                   onChange={(checked) =>
@@ -160,7 +160,7 @@ export default function ProfilePage() {
               <div className="w-full h-px bg-gray-100 my-2" />
               <div className="flex justify-between items-center w-full">
                 <p
-                  className={`md:text-xl ${
+                  className={`md:text-lg ${
                     !preferences?.system_notifications_enabled
                       ? "text-gray-400"
                       : "text-gray-600"
@@ -184,7 +184,7 @@ export default function ProfilePage() {
               </div>
               <div className="flex justify-between items-center w-full">
                 <p
-                  className={`md:text-xl ${
+                  className={`md:text-lg ${
                     !preferences?.system_notifications_enabled
                       ? "text-gray-400"
                       : "text-gray-600"
@@ -205,7 +205,7 @@ export default function ProfilePage() {
               </div>
               <div className="flex justify-between items-center w-full">
                 <p
-                  className={`md:text-xl ${
+                  className={`md:text-lg ${
                     !preferences?.system_notifications_enabled
                       ? "text-gray-400"
                       : "text-gray-600"

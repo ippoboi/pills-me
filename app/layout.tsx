@@ -4,7 +4,6 @@ import { ThemeProvider } from "next-themes";
 import "./globals.css";
 import Providers from "./providers";
 import { AuthProvider } from "@/lib/contexts/auth-context";
-import { AuthLoadingWrapper } from "@/components/auth-loading-wrapper";
 import {
   validateEnvironmentVariables,
   isServerEnvironment,
@@ -50,16 +49,14 @@ export default function RootLayout({
       <body className={`${geistSans.className} bg-gray-100 antialiased`}>
         <Providers>
           <AuthProvider>
-            <AuthLoadingWrapper>
-              <ThemeProvider
-                attribute="class"
-                defaultTheme="light"
-                enableSystem={false}
-                disableTransitionOnChange
-              >
-                {children}
-              </ThemeProvider>
-            </AuthLoadingWrapper>
+            <ThemeProvider
+              attribute="class"
+              defaultTheme="light"
+              enableSystem={false}
+              disableTransitionOnChange
+            >
+              {children}
+            </ThemeProvider>
           </AuthProvider>
         </Providers>
       </body>
