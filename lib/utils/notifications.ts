@@ -1,322 +1,245 @@
-import { type NotificationPayload } from "@/app/actions/push-notifications";
-
 /**
- * Notification utility functions for Pills-Me
- * Provides standardized notification formatting and scheduling
+ * Client-side notification scheduling utilities
+ * Handles communication with Service Worker for supplement reminders
  */
 
-export interface SupplementReminder {
-  supplementId: string;
-  supplementName: string;
-  dosage?: string;
-  timeOfDay: "morning" | "afternoon" | "evening";
-  scheduledTime?: string;
-}
+import { getUserTimezone } from "./timezone";
+import type { NotificationPreferences } from "@/lib/types/user";
 
-export interface RefillReminder {
-  supplementId: string;
-  supplementName: string;
-  currentInventory: number;
-  daysRemaining: number;
+export interface SupplementWithSchedules {
+  id: string;
+  name: string;
+  status: "ACTIVE" | "COMPLETED" | "CANCELLED";
+  deleted_at: string | null;
+  schedules?: Array<{
+    id: string;
+    time_of_day: "MORNING" | "LUNCH" | "DINNER" | "BEFORE_SLEEP";
+  }>;
 }
 
 /**
- * Create a supplement reminder notification payload
+ * Schedule supplement notifications via Service Worker
  */
-export function createSupplementReminderNotification(
-  reminder: SupplementReminder
-): NotificationPayload {
-  const timeEmoji = {
-    morning: "🌅",
-    afternoon: "☀️",
-    evening: "🌙",
-  };
+export async function scheduleSupplementNotifications(
+  supplements: SupplementWithSchedules[],
+  preferences: NotificationPreferences | null,
+  timezone?: string
+): Promise<void> {
+  try {
+    // Check if Service Worker is supported
+    if (!("serviceWorker" in navigator)) {
+      console.warn("Service Worker not supported");
+      return;
+    }
 
-  const title = `${timeEmoji[reminder.timeOfDay]} Time for your supplement!`;
+    // Get the active service worker registration
+    const registration = await navigator.serviceWorker.ready;
+    if (!registration.active) {
+      console.warn("No active service worker found");
+      return;
+    }
 
-  let body = `Don't forget to take your ${reminder.supplementName}`;
-  if (reminder.dosage) {
-    body += ` (${reminder.dosage})`;
+    // Use provided timezone or detect user's timezone
+    const userTimezone = timezone || getUserTimezone();
+
+    // Send scheduling message to Service Worker
+    registration.active.postMessage({
+      type: "SCHEDULE_SUPPLEMENT_NOTIFICATIONS",
+      supplements,
+      preferences,
+      timezone: userTimezone,
+    });
+
+    console.log("Scheduled supplement notifications:", {
+      supplementCount: supplements.length,
+      preferences,
+      timezone: userTimezone,
+    });
+  } catch (error) {
+    console.error("Error scheduling supplement notifications:", error);
+  }
+}
+
+/**
+ * Clear all scheduled supplement notifications
+ */
+export async function clearScheduledNotifications(): Promise<void> {
+  try {
+    if (!("serviceWorker" in navigator)) {
+      console.warn("Service Worker not supported");
+      return;
+    }
+
+    const registration = await navigator.serviceWorker.ready;
+    if (!registration.active) {
+      console.warn("No active service worker found");
+      return;
+    }
+
+    registration.active.postMessage({
+      type: "CLEAR_SCHEDULED_NOTIFICATIONS",
+    });
+
+    console.log("Cleared all scheduled notifications");
+  } catch (error) {
+    console.error("Error clearing scheduled notifications:", error);
+  }
+}
+
+/**
+ * Request notification permission if not already granted
+ */
+export async function requestNotificationPermission(): Promise<NotificationPermission> {
+  if (!("Notification" in window)) {
+    console.warn("Notifications not supported");
+    return "denied";
   }
 
-  return {
-    title,
-    body,
-    icon: "/icon-192x192.png",
-    badge: "/icon-192x192.png",
-    url: `/supplements/${reminder.supplementId}`,
-    tag: `supplement-reminder-${reminder.supplementId}`,
-    requireInteraction: true,
-    data: {
-      type: "supplement_reminder",
-      supplementId: reminder.supplementId,
-      timeOfDay: reminder.timeOfDay,
-    },
-    actions: [
-      {
-        action: "mark_taken",
-        title: "Mark as Taken",
-        icon: "/icon-192x192.png",
-      },
-      {
-        action: "snooze",
-        title: "Remind Later",
-        icon: "/icon-192x192.png",
-      },
-    ],
-  };
-}
-
-/**
- * Create a refill reminder notification payload
- */
-export function createRefillReminderNotification(
-  reminder: RefillReminder
-): NotificationPayload {
-  const urgencyLevel = reminder.daysRemaining <= 3 ? "urgent" : "normal";
-  const emoji = urgencyLevel === "urgent" ? "🚨" : "📦";
-
-  const title = `${emoji} Refill reminder`;
-
-  let body = `You have ${reminder.currentInventory} ${reminder.supplementName} left`;
-  if (reminder.daysRemaining > 0) {
-    body += ` (${reminder.daysRemaining} days remaining)`;
-  } else {
-    body += " - time to reorder!";
+  if (Notification.permission === "granted") {
+    return "granted";
   }
 
-  return {
-    title,
-    body,
-    icon: "/icon-192x192.png",
-    badge: "/icon-192x192.png",
-    url: `/supplements/${reminder.supplementId}`,
-    tag: `refill-reminder-${reminder.supplementId}`,
-    requireInteraction: urgencyLevel === "urgent",
-    data: {
-      type: "refill_reminder",
-      supplementId: reminder.supplementId,
-      urgencyLevel,
-      daysRemaining: reminder.daysRemaining,
-    },
-    actions: [
-      {
-        action: "refill_now",
-        title: "Refill Now",
-        icon: "/icon-192x192.png",
-      },
-      {
-        action: "remind_tomorrow",
-        title: "Remind Tomorrow",
-        icon: "/icon-192x192.png",
-      },
-    ],
-  };
-}
-
-/**
- * Create an achievement notification payload
- */
-export function createAchievementNotification(
-  achievementType: string,
-  description: string,
-  supplementName?: string
-): NotificationPayload {
-  const achievements = {
-    streak_7: { emoji: "🔥", title: "7-day streak!" },
-    streak_30: { emoji: "🏆", title: "30-day streak!" },
-    streak_100: { emoji: "💎", title: "100-day streak!" },
-    first_supplement: { emoji: "🎉", title: "Welcome to Pills-Me!" },
-    perfect_week: { emoji: "⭐", title: "Perfect week!" },
-    perfect_month: { emoji: "🌟", title: "Perfect month!" },
-  };
-
-  const achievement = achievements[
-    achievementType as keyof typeof achievements
-  ] || {
-    emoji: "🎊",
-    title: "Achievement unlocked!",
-  };
-
-  let body = description;
-  if (supplementName) {
-    body += ` with ${supplementName}`;
+  if (Notification.permission === "denied") {
+    return "denied";
   }
 
-  return {
-    title: `${achievement.emoji} ${achievement.title}`,
-    body,
-    icon: "/icon-192x192.png",
-    badge: "/icon-192x192.png",
-    url: "/supplements",
-    tag: `achievement-${achievementType}`,
-    data: {
-      type: "achievement",
-      achievementType,
-      supplementName,
-    },
-  };
+  // Request permission
+  const permission = await Notification.requestPermission();
+  console.log("Notification permission:", permission);
+  return permission;
 }
 
 /**
- * Create a system notification payload
- */
-export function createSystemNotification(
-  title: string,
-  message: string,
-  url?: string
-): NotificationPayload {
-  return {
-    title: `📱 ${title}`,
-    body: message,
-    icon: "/icon-192x192.png",
-    badge: "/icon-192x192.png",
-    url: url || "/supplements",
-    tag: "system-notification",
-    data: {
-      type: "system",
-    },
-  };
-}
-
-/**
- * Calculate the next reminder time based on time of day preference
- */
-export function calculateNextReminderTime(
-  timeOfDay: "morning" | "afternoon" | "evening",
-  customTime?: string
-): Date {
-  const now = new Date();
-  const tomorrow = new Date(now);
-  tomorrow.setDate(tomorrow.getDate() + 1);
-
-  // Default times if no custom time is provided
-  const defaultTimes = {
-    morning: "08:00",
-    afternoon: "14:00",
-    evening: "20:00",
-  };
-
-  const timeString = customTime || defaultTimes[timeOfDay];
-  const [hours, minutes] = timeString.split(":").map(Number);
-
-  // Set the time for today
-  const reminderTime = new Date(now);
-  reminderTime.setHours(hours, minutes, 0, 0);
-
-  // If the time has already passed today, schedule for tomorrow
-  if (reminderTime <= now) {
-    reminderTime.setDate(reminderTime.getDate() + 1);
-  }
-
-  return reminderTime;
-}
-
-/**
- * Format notification time for display
- */
-export function formatNotificationTime(date: Date): string {
-  return date.toLocaleTimeString("en-US", {
-    hour: "numeric",
-    minute: "2-digit",
-    hour12: true,
-  });
-}
-
-/**
- * Check if notifications are supported in the current environment
+ * Check if notifications are supported and permitted
  */
 export function isNotificationSupported(): boolean {
   return (
-    typeof window !== "undefined" &&
+    "Notification" in window &&
     "serviceWorker" in navigator &&
-    "PushManager" in window &&
-    "Notification" in window
+    Notification.permission === "granted"
   );
 }
 
 /**
- * Get notification permission status
+ * Get the next notification times for active supplements
+ * Useful for displaying upcoming reminders to users
  */
-export function getNotificationPermission(): NotificationPermission | null {
-  if (typeof window === "undefined" || !("Notification" in window)) {
-    return null;
+export function getNextNotificationTimes(
+  supplements: SupplementWithSchedules[],
+  preferences: NotificationPreferences | null
+): Array<{
+  supplementId: string;
+  supplementName: string;
+  timeOfDay: string;
+  nextTime: Date;
+}> {
+  if (
+    !preferences?.system_notifications_enabled ||
+    !preferences?.supplement_reminders_enabled
+  ) {
+    return [];
   }
-  return Notification.permission;
+
+  const hoursByTimeOfDay = {
+    MORNING: 8,
+    LUNCH: 12,
+    DINNER: 18,
+    BEFORE_SLEEP: 22,
+  };
+
+  const now = new Date();
+  const results: Array<{
+    supplementId: string;
+    supplementName: string;
+    timeOfDay: string;
+    nextTime: Date;
+  }> = [];
+
+  supplements.forEach((supplement) => {
+    if (supplement.status !== "ACTIVE" || supplement.deleted_at) {
+      return;
+    }
+
+    supplement.schedules?.forEach((schedule) => {
+      const hour = hoursByTimeOfDay[schedule.time_of_day];
+      if (hour === undefined) return;
+
+      // Calculate next notification time
+      const nextTime = new Date();
+      nextTime.setHours(hour, 0, 0, 0);
+
+      // If the time has already passed today, schedule for tomorrow
+      if (nextTime <= now) {
+        nextTime.setDate(nextTime.getDate() + 1);
+      }
+
+      results.push({
+        supplementId: supplement.id,
+        supplementName: supplement.name,
+        timeOfDay: schedule.time_of_day,
+        nextTime,
+      });
+    });
+  });
+
+  // Sort by next notification time
+  results.sort((a, b) => a.nextTime.getTime() - b.nextTime.getTime());
+
+  return results;
 }
 
 /**
- * Request notification permission
+ * Format time of day for display
  */
-export async function requestNotificationPermission(): Promise<NotificationPermission> {
-  if (!isNotificationSupported()) {
-    throw new Error("Notifications are not supported in this browser");
-  }
+export function formatTimeOfDay(timeOfDay: string): string {
+  const labels = {
+    MORNING: "Morning (8:00 AM)",
+    LUNCH: "Lunch (12:00 PM)",
+    DINNER: "Dinner (6:00 PM)",
+    BEFORE_SLEEP: "Before Sleep (10:00 PM)",
+  };
 
-  return await Notification.requestPermission();
+  return labels[timeOfDay as keyof typeof labels] || timeOfDay;
 }
 
 /**
- * Validate notification payload
+ * Show a test notification to verify setup
  */
-export function validateNotificationPayload(
-  payload: unknown
-): payload is NotificationPayload {
-  if (typeof payload !== "object" || payload === null) {
+export async function showTestNotification(): Promise<boolean> {
+  try {
+    const permission = await requestNotificationPermission();
+    if (permission !== "granted") {
+      console.warn("Notification permission not granted");
+      return false;
+    }
+
+    if (!("serviceWorker" in navigator)) {
+      // Fallback to direct notification if no Service Worker
+      new Notification("Pills-Me Test", {
+        body: "Notifications are working correctly!",
+        icon: "/icon-192x192.png",
+        badge: "/icon-192x192.png",
+      });
+      return true;
+    }
+
+    const registration = await navigator.serviceWorker.ready;
+    if (!registration.active) {
+      console.warn("No active service worker found");
+      return false;
+    }
+
+    // Show test notification via Service Worker
+    await registration.showNotification("Pills-Me Test", {
+      body: "Notifications are working correctly!",
+      icon: "/icon-192x192.png",
+      badge: "/icon-192x192.png",
+      tag: "test-notification",
+    });
+
+    return true;
+  } catch (error) {
+    console.error("Error showing test notification:", error);
     return false;
   }
-
-  const obj = payload as Record<string, unknown>;
-
-  return (
-    typeof obj.title === "string" &&
-    typeof obj.body === "string" &&
-    obj.title.length > 0 &&
-    obj.body.length > 0
-  );
 }
-
-/**
- * Create a notification for testing purposes
- */
-export function createTestNotification(message?: string): NotificationPayload {
-  return {
-    title: "Test Notification",
-    body: message || "This is a test notification from Pills-Me",
-    icon: "/icon-192x192.png",
-    badge: "/icon-192x192.png",
-    url: "/supplements",
-    tag: "test-notification",
-    data: {
-      type: "test",
-      timestamp: Date.now(),
-    },
-  };
-}
-
-/**
- * Get notification settings for a user (to be used with notification preferences)
- */
-export interface NotificationSettings {
-  supplementReminders: boolean;
-  refillReminders: boolean;
-  achievements: boolean;
-  system: boolean;
-  reminderTimes: {
-    morning?: string;
-    afternoon?: string;
-    evening?: string;
-  };
-}
-
-export const defaultNotificationSettings: NotificationSettings = {
-  supplementReminders: true,
-  refillReminders: true,
-  achievements: true,
-  system: true,
-  reminderTimes: {
-    morning: "08:00",
-    afternoon: "14:00",
-    evening: "20:00",
-  },
-};

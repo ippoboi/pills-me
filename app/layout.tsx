@@ -3,6 +3,8 @@ import { Geist } from "next/font/google";
 import { ThemeProvider } from "next-themes";
 import "./globals.css";
 import Providers from "./providers";
+import { AuthProvider } from "@/lib/contexts/auth-context";
+import { AuthLoadingWrapper } from "@/components/auth-loading-wrapper";
 import {
   validateEnvironmentVariables,
   isServerEnvironment,
@@ -29,7 +31,7 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: "#fff",
+  themeColor: "#F9FAFB",
 };
 
 const geistSans = Geist({
@@ -45,16 +47,20 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <body className={`${geistSans.className} antialiased`}>
+      <body className={`${geistSans.className} bg-gray-100 antialiased`}>
         <Providers>
-          <ThemeProvider
-            attribute="class"
-            defaultTheme="light"
-            enableSystem={false}
-            disableTransitionOnChange
-          >
-            {children}
-          </ThemeProvider>
+          <AuthProvider>
+            <AuthLoadingWrapper>
+              <ThemeProvider
+                attribute="class"
+                defaultTheme="light"
+                enableSystem={false}
+                disableTransitionOnChange
+              >
+                {children}
+              </ThemeProvider>
+            </AuthLoadingWrapper>
+          </AuthProvider>
         </Providers>
       </body>
     </html>

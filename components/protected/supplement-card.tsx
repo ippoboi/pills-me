@@ -35,6 +35,7 @@ export default function SupplementCard({
 
   const [isTaken, setIsTaken] = useState(initialTakenStatus);
   const [userTimezone, setUserTimezone] = useState<string>("UTC");
+  const [isToggling, setIsToggling] = useState(false);
 
   // Detect user timezone on mount
   useEffect(() => {
@@ -47,6 +48,10 @@ export default function SupplementCard({
   }, [initialTakenStatus]);
 
   const handleToggle = async () => {
+    // Prevent double-click/tap by checking if already toggling
+    if (isToggling) return;
+    
+    setIsToggling(true);
     // Optimistic update - update UI immediately
     const previousState = isTaken;
     const nextIsTaken = !isTaken;
@@ -168,10 +173,16 @@ export default function SupplementCard({
         queryKey: ["supplements", "list"],
       });
       console.error("Failed to toggle adherence:", error);
+    } finally {
+      // Always re-enable the card after toggle completes
+      setIsToggling(false);
     }
   };
 
   const handleCardKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
+    // Prevent interaction when toggling
+    if (isToggling) return;
+    
     if (
       event.key === "Enter" ||
       event.key === " " ||
@@ -194,6 +205,9 @@ export default function SupplementCard({
       role="button"
       tabIndex={0}
       onClick={(event) => {
+        // Prevent interaction when toggling
+        if (isToggling) return;
+        
         // Only prevent card click if clicking directly on checkbox or its wrapper
         const target = event.target as HTMLElement;
         const isCheckboxClick =
@@ -205,8 +219,10 @@ export default function SupplementCard({
       }}
       onKeyDown={handleCardKeyDown}
       className={cn(
-        "bg-white p-2 md:p-3 rounded-3xl cursor-pointer transition-colors hover:bg-gray-50 active:bg-gray-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2",
-        isTaken && "opacity-60"
+        "bg-white p-2 md:p-3 rounded-3xl transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2",
+        !isToggling && "cursor-pointer hover:bg-gray-50 active:bg-gray-100",
+        isToggling && "cursor-not-allowed opacity-50 pointer-events-none",
+        isTaken && !isToggling && "opacity-60"
       )}
     >
       <div className="flex items-center justify-between gap-4">
@@ -272,10 +288,26 @@ export default function SupplementCard({
         <div
           data-checkbox-wrapper
           className="p-3 flex items-center justify-center"
-          onClick={(event) => event.stopPropagation()}
-          onKeyDown={(event) => event.stopPropagation()}
+          onClick={(event) => {
+            if (isToggling) {
+              event.stopPropagation();
+              return;
+            }
+            event.stopPropagation();
+          }}
+          onKeyDown={(event) => {
+            if (isToggling) {
+              event.stopPropagation();
+              return;
+            }
+            event.stopPropagation();
+          }}
         >
-          <Checkbox checked={isTaken} onCheckedChange={handleToggle} />
+          <Checkbox 
+            checked={isTaken} 
+            onCheckedChange={handleToggle}
+            disabled={isToggling}
+          />
         </div>
       </div>
     </div>

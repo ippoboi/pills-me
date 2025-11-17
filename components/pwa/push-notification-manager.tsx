@@ -3,11 +3,15 @@
 import { useState, useEffect } from "react";
 import {
   subscribeUser,
-  unsubscribeUser,
   sendTestNotification,
   type SerializablePushSubscription,
 } from "@/app/actions/push-notifications";
 import { Button } from "@/components/ui/button";
+import { Loader2 } from "lucide-react";
+import {
+  usePushSubscriptionStatus,
+  useCleanupRevokedSubscriptions,
+} from "@/lib/hooks";
 
 function urlBase64ToUint8Array(base64String: string) {
   const padding = "=".repeat((4 - (base64String.length % 4)) % 4);
@@ -39,7 +43,11 @@ export default function PushNotificationManager() {
   const [message, setMessage] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [success, setSuccess] = useState<string | null>(null);
+
+  // Get comprehensive subscription status
+  const { data: subscriptionStatus, refetch: refetchSubscriptionStatus } =
+    usePushSubscriptionStatus();
+  const cleanupRevoked = useCleanupRevokedSubscriptions();
 
   useEffect(() => {
     if ("serviceWorker" in navigator && "PushManager" in window) {
@@ -48,9 +56,24 @@ export default function PushNotificationManager() {
     }
   }, []);
 
+  // Effect to cleanup database when browser permissions are revoked
+  useEffect(() => {
+    if (subscriptionStatus) {
+      const { hasServerSubscription, browserPermission } = subscriptionStatus;
+
+      // If we have server subscriptions but browser permission is denied,
+      // cleanup the database to keep it in sync
+      if (hasServerSubscription && browserPermission === "denied") {
+        console.log(
+          "Browser permissions denied, cleaning up database subscriptions"
+        );
+        cleanupRevoked.mutate();
+      }
+    }
+  }, [subscriptionStatus, cleanupRevoked]);
+
   const clearMessages = () => {
     setError(null);
-    setSuccess(null);
   };
 
   async function registerServiceWorker() {
@@ -122,7 +145,8 @@ export default function PushNotificationManager() {
       console.log("Database save result:", result);
 
       if (result.success) {
-        setSuccess("Successfully subscribed to push notifications!");
+        // Refetch subscription status to update the UI
+        refetchSubscriptionStatus();
       } else {
         throw new Error(result.error || "Failed to save subscription");
       }
@@ -134,39 +158,6 @@ export default function PushNotificationManager() {
           : "Failed to subscribe to push notifications";
       setError(errorMessage);
       setSubscription(null);
-    } finally {
-      setIsLoading(false);
-    }
-  }
-
-  async function unsubscribeFromPush() {
-    if (isLoading) return;
-
-    setIsLoading(true);
-    clearMessages();
-
-    try {
-      if (subscription) {
-        await subscription.unsubscribe();
-
-        // Remove from database
-        const result = await unsubscribeUser(subscription.endpoint);
-
-        if (result.success) {
-          setSuccess("Successfully unsubscribed from push notifications");
-        } else {
-          throw new Error(result.error || "Failed to remove subscription");
-        }
-      }
-
-      setSubscription(null);
-    } catch (error: unknown) {
-      console.error("Failed to unsubscribe:", error);
-      const errorMessage =
-        error instanceof Error
-          ? error.message
-          : "Failed to unsubscribe from push notifications";
-      setError(errorMessage);
     } finally {
       setIsLoading(false);
     }
@@ -186,9 +177,6 @@ export default function PushNotificationManager() {
       console.log("Test notification result:", result);
 
       if (result.success) {
-        setSuccess(
-          `Test notification sent successfully! (${result.sentCount} devices)`
-        );
         setMessage("");
       } else {
         throw new Error(result.error || "Failed to send notification");
@@ -218,9 +206,6 @@ export default function PushNotificationManager() {
           body: "This is a local test notification to verify notifications work on your system",
           icon: "/icon-192x192.png",
         });
-        setSuccess(
-          "Local notification sent! If you didn't see it, check your system notification settings."
-        );
       } else {
         setError("Notification permission not granted");
       }
@@ -232,7 +217,7 @@ export default function PushNotificationManager() {
 
   if (!isSupported) {
     return (
-      <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+      <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-[32px] ">
         <p className="text-yellow-800">
           Push notifications are not supported in this browser. Please use a
           modern browser like Chrome, Firefox, or Safari.
@@ -241,12 +226,30 @@ export default function PushNotificationManager() {
     );
   }
 
+  const isDevelopment = process.env.NODE_ENV === "development";
+
+  // Use comprehensive subscription status
+  const isFullyEnabled = subscriptionStatus?.isFullyEnabled ?? false;
+  const needsResubscription = subscriptionStatus?.needsResubscription ?? false;
+
+  // Only show this component when:
+  // 1. Notifications are not fully enabled (missing permission or subscription)
+  // 2. There's an error
+  // 3. User needs to resubscribe due to browser/database mismatch
+  const shouldShow = !isFullyEnabled || error || needsResubscription;
+
+  if (!shouldShow) {
+    return null; // Hide when everything is working fine
+  }
+
   return (
-    <div className="space-y-4">
-      <div>
-        <h3 className="text-lg font-semibold mb-2">Push Notifications</h3>
-        <p className="text-sm text-gray-600 mb-4">
-          Get notified about your supplement reminders and important updates.
+    <div className="bg-white p-6 rounded-[32px] shadow-sm space-y-4">
+      <div className="space-y-2">
+        <h2 className="uppercase text-gray-500">Allow Notifications</h2>
+        <p className="text-gray-600 mb-4 max-w-md">
+          {needsResubscription
+            ? "Your browser notifications were disabled. Please re-enable them to continue receiving supplement reminders."
+            : "Allow your browser to receive notifications for supplement reminders and updates."}
         </p>
       </div>
 
@@ -257,80 +260,53 @@ export default function PushNotificationManager() {
         </div>
       )}
 
-      {/* Success Message */}
-      {success && (
-        <div className="p-3 bg-green-50 border border-green-200 rounded-lg">
-          <p className="text-green-800 text-sm">{success}</p>
-        </div>
-      )}
-
       {subscription ? (
         <div className="space-y-4">
-          <div className="flex items-center space-x-2">
-            <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-            <p className="text-sm text-gray-700">
-              You are subscribed to push notifications
-            </p>
-          </div>
-
-          <Button
-            onClick={unsubscribeFromPush}
-            variant="outline"
-            disabled={isLoading}
-            className="w-full sm:w-auto"
-          >
-            {isLoading ? "Unsubscribing..." : "Unsubscribe"}
-          </Button>
-
-          <div className="border-t pt-4">
-            <h4 className="font-medium mb-2">Test Notifications</h4>
-            <div className="space-y-2">
-              <Button
-                onClick={testLocalNotification}
-                variant="outline"
-                className="w-full sm:w-auto mr-2"
-              >
-                Test Local Notification
-              </Button>
-              <input
-                type="text"
-                placeholder="Enter test message (optional)"
-                value={message}
-                onChange={(e) => setMessage(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                disabled={isLoading}
-              />
-              <Button
-                onClick={handleSendTestNotification}
-                disabled={isLoading}
-                className="w-full sm:w-auto"
-              >
-                {isLoading ? "Sending..." : "Send Push Notification"}
-              </Button>
+          {isDevelopment && (
+            <div className="border-t pt-4">
+              <h4 className="font-medium mb-2">
+                Test Notifications (Development)
+              </h4>
+              <div className="space-y-2">
+                <Button
+                  onClick={testLocalNotification}
+                  variant="outline"
+                  className="w-full sm:w-auto mr-2"
+                >
+                  Test Local Notification
+                </Button>
+                <input
+                  type="text"
+                  placeholder="Enter test message (optional)"
+                  value={message}
+                  onChange={(e) => setMessage(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  disabled={isLoading}
+                />
+                <Button
+                  onClick={handleSendTestNotification}
+                  disabled={isLoading}
+                  className="w-full sm:w-auto"
+                >
+                  {isLoading ? "Sending..." : "Send Push Notification"}
+                </Button>
+              </div>
             </div>
-          </div>
+          )}
         </div>
       ) : (
         <div className="space-y-4">
-          <div className="flex items-center space-x-2">
-            <div className="w-2 h-2 bg-gray-400 rounded-full"></div>
-            <p className="text-sm text-gray-700">
-              You are not subscribed to push notifications
-            </p>
-          </div>
-
           <Button
             onClick={subscribeToPush}
             disabled={isLoading}
             className="w-full sm:w-auto"
           >
-            {isLoading ? "Subscribing..." : "Enable Notifications"}
+            {isLoading ? (
+              <Loader2 className="animation-spin" />
+            ) : (
+              "Enable Notifications"
+            )}
           </Button>
-
-          <p className="text-xs text-gray-500">
-            We&apos;ll ask for your permission to send notifications. You can
-            change this anytime in your browser settings.
-          </p>
         </div>
       )}
     </div>

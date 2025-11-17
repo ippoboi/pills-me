@@ -6,7 +6,7 @@ CREATE TABLE notification_preferences (
   user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE UNIQUE,
   supplement_reminders_enabled BOOLEAN NOT NULL DEFAULT TRUE,
   refill_reminders_enabled BOOLEAN NOT NULL DEFAULT TRUE,
-  achievement_notifications_enabled BOOLEAN NOT NULL DEFAULT TRUE,
+  app_updates_enabled BOOLEAN NOT NULL DEFAULT TRUE,
   system_notifications_enabled BOOLEAN NOT NULL DEFAULT TRUE,
   reminder_times JSONB,
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
@@ -20,7 +20,7 @@ CREATE UNIQUE INDEX idx_notification_preferences_user_id ON notification_prefere
 COMMENT ON TABLE notification_preferences IS 'User-specific notification preferences and settings';
 COMMENT ON COLUMN notification_preferences.supplement_reminders_enabled IS 'Enable/disable supplement reminder notifications';
 COMMENT ON COLUMN notification_preferences.refill_reminders_enabled IS 'Enable/disable refill reminder notifications';
-COMMENT ON COLUMN notification_preferences.achievement_notifications_enabled IS 'Enable/disable achievement/milestone notifications';
+COMMENT ON COLUMN notification_preferences.app_updates_enabled IS 'Enable/disable new updates notification';
 COMMENT ON COLUMN notification_preferences.system_notifications_enabled IS 'Enable/disable system/app notifications';
 COMMENT ON COLUMN notification_preferences.reminder_times IS 'JSON object storing custom reminder times per time_of_day';
 

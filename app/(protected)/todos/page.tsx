@@ -1,8 +1,5 @@
 "use client";
 
-import { useRouter } from "next/navigation";
-import { useEffect } from "react";
-
 import ListEmptyState from "@/components/protected/list-empty-state";
 import ListErrorState from "@/components/protected/list-error-state";
 import ListLoadingState from "@/components/protected/list-loading-state";
@@ -42,7 +39,7 @@ function renderSupplementListContent(
   onRefetch: () => void
 ) {
   if (supplementsLoading) {
-    return <ListLoadingState message="Loading supplements..." />;
+    return <ListLoadingState numberOfCards={6} />;
   }
 
   if (supplementsError) {
@@ -75,7 +72,6 @@ function renderSupplementListContent(
 }
 
 export default function ProtectedPage() {
-  const router = useRouter();
   const { date, timezone, setIsFormOpen } = useDateContext();
 
   const {
@@ -85,26 +81,11 @@ export default function ProtectedPage() {
     refetch: refetchSupplements,
   } = useTodaySupplements(date, timezone);
 
-  useEffect(() => {
-    const checkSession = async () => {
-      try {
-        const meResp = await fetch("/api/auth/me");
-        if (!meResp.ok) {
-          router.push("/auth");
-        }
-      } catch {
-        router.push("/auth");
-      }
-    };
-
-    checkSession();
-  }, [router]);
-
   return (
     <SupplementLayout>
       <div className="min-h-screen">
         <div className="max-w-4xl mx-auto overflow-visible px-4 md:px-8 lg:px-0">
-          <div className="h-40" />
+          <div className="h-32" />
           {renderSupplementListContent(
             supplementsLoading,
             supplementsError,

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { startAuthentication } from "@simplewebauthn/browser";
 import { Fingerprint, Loader2 } from "lucide-react";
@@ -17,22 +17,6 @@ export default function AuthPage() {
   const [lookingUpUser] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-
-  // Check if user is already logged in (via app cookie, not Supabase auth)
-  useEffect(() => {
-    const checkSession = async () => {
-      try {
-        const res = await fetch("/api/auth/me", { cache: "no-store" });
-        if (res.ok) {
-          const data = await res.json();
-          if (data?.id) {
-            router.push("/todos");
-          }
-        }
-      } catch {}
-    };
-    checkSession();
-  }, [router]);
 
   const handleCreatePasskey = () => {
     router.push("/onboarding");

@@ -9,6 +9,28 @@ self.addEventListener("push", function (event) {
       const data = event.data.json();
       console.log("Push notification data:", data);
 
+      // Determine redirect URL based on notification type
+      let redirectUrl = data.url;
+      if (!redirectUrl) {
+        // If no explicit URL, determine based on notification type
+        if (data.tag && data.tag.includes("refill")) {
+          // Refill notification - redirect to supplement detail page
+          const supplementId = data.data?.supplementId || data.supplementId;
+          redirectUrl = supplementId
+            ? `/supplements/${supplementId}`
+            : "/todos";
+        } else if (data.tag && data.tag.includes("app-update")) {
+          // App update notification - redirect to todos
+          redirectUrl = "/todos";
+        } else if (data.data?.supplementId) {
+          // Has supplement ID but no explicit URL - likely a refill notification
+          redirectUrl = `/supplements/${data.data.supplementId}`;
+        } else {
+          // Default to todos for reminder notifications
+          redirectUrl = "/todos";
+        }
+      }
+
       const options = {
         body: data.body || "You have a new notification",
         icon: data.icon || "/icon-192x192.png",
@@ -17,7 +39,7 @@ self.addEventListener("push", function (event) {
         data: {
           dateOfArrival: Date.now(),
           primaryKey: data.id || "1",
-          url: data.url || "/supplements",
+          url: redirectUrl,
           ...data.data,
         },
         actions: data.actions || [],
@@ -40,7 +62,7 @@ self.addEventListener("push", function (event) {
           badge: "/icon-192x192.png",
           data: {
             dateOfArrival: Date.now(),
-            url: "/supplements",
+            url: "/todos",
           },
         })
       );
@@ -56,7 +78,7 @@ self.addEventListener("push", function (event) {
         badge: "/icon-192x192.png",
         data: {
           dateOfArrival: Date.now(),
-          url: "/supplements",
+          url: "/todos",
         },
       })
     );
@@ -68,8 +90,29 @@ self.addEventListener("notificationclick", function (event) {
 
   event.notification.close();
 
-  // Get the URL to open from notification data, default to supplements page
-  const urlToOpen = event.notification.data?.url || "/supplements";
+  // Get the URL to open from notification data
+  // Determine URL based on notification type if not explicitly set
+  let urlToOpen = event.notification.data?.url;
+
+  if (!urlToOpen) {
+    // Fallback logic based on notification tag or data
+    const tag = event.notification.tag || "";
+    const supplementId = event.notification.data?.supplementId;
+
+    if (tag.includes("refill") && supplementId) {
+      // Refill notification - redirect to supplement detail page
+      urlToOpen = `/supplements/${supplementId}`;
+    } else if (tag.includes("app-update")) {
+      // App update notification - redirect to todos
+      urlToOpen = "/todos";
+    } else if (supplementId) {
+      // Has supplement ID - likely a refill notification
+      urlToOpen = `/supplements/${supplementId}`;
+    } else {
+      // Default to todos for reminder notifications
+      urlToOpen = "/todos";
+    }
+  }
 
   // Handle action clicks if any
   if (event.action) {
@@ -141,6 +184,186 @@ self.addEventListener("sync", function (event) {
     );
   }
 });
+
+// Store for scheduled notifications
+let scheduledNotifications = new Map();
+
+// Handle messages from the main thread for scheduling notifications
+self.addEventListener("message", function (event) {
+  console.log("Service worker received message:", event.data);
+
+  if (event.data && event.data.type === "SCHEDULE_SUPPLEMENT_NOTIFICATIONS") {
+    const { supplements, preferences, timezone } = event.data;
+    scheduleSupplementNotifications(supplements, preferences, timezone);
+  }
+
+  if (event.data && event.data.type === "CLEAR_SCHEDULED_NOTIFICATIONS") {
+    clearAllScheduledNotifications();
+  }
+});
+
+// Schedule supplement notifications
+function scheduleSupplementNotifications(supplements, preferences, timezone) {
+  console.log("Scheduling supplement notifications:", {
+    supplements,
+    preferences,
+    timezone,
+  });
+
+  // Clear existing scheduled notifications
+  clearAllScheduledNotifications();
+
+  // Check if system notifications are enabled
+  if (
+    !preferences?.system_notifications_enabled ||
+    !preferences?.supplement_reminders_enabled
+  ) {
+    console.log("Supplement notifications disabled in preferences");
+    return;
+  }
+
+  // Time mapping for each time_of_day (matches backend)
+  const hoursByTimeOfDay = {
+    MORNING: 8,
+    LUNCH: 12,
+    DINNER: 18,
+    BEFORE_SLEEP: 22,
+  };
+
+  const now = new Date();
+
+  supplements.forEach((supplement) => {
+    if (supplement.status !== "ACTIVE" || supplement.deleted_at) {
+      return; // Skip inactive or deleted supplements
+    }
+
+    supplement.schedules?.forEach((schedule) => {
+      const hour = hoursByTimeOfDay[schedule.time_of_day];
+      if (hour === undefined) return;
+
+      // Calculate next notification time
+      const nextNotificationTime = getNextNotificationTime(hour);
+
+      if (nextNotificationTime) {
+        const timeoutId = setTimeout(() => {
+          showSupplementNotification(supplement, schedule.time_of_day);
+
+          // Schedule the next day's notification
+          const nextDayTime = new Date(
+            nextNotificationTime.getTime() + 24 * 60 * 60 * 1000
+          );
+          scheduleSupplementNotification(
+            supplement,
+            schedule.time_of_day,
+            nextDayTime
+          );
+        }, nextNotificationTime.getTime() - now.getTime());
+
+        // Store the timeout ID for cleanup
+        const key = `${supplement.id}-${schedule.time_of_day}`;
+        scheduledNotifications.set(key, timeoutId);
+
+        console.log(
+          `Scheduled notification for ${supplement.name} at ${schedule.time_of_day} (${nextNotificationTime})`
+        );
+      }
+    });
+  });
+}
+
+// Get the next notification time for a given hour
+function getNextNotificationTime(hour) {
+  const now = new Date();
+
+  // Create a date for today at the specified hour
+  const today = new Date();
+  today.setHours(hour, 0, 0, 0);
+
+  // If the time has already passed today, schedule for tomorrow
+  if (today <= now) {
+    today.setDate(today.getDate() + 1);
+  }
+
+  return today;
+}
+
+// Schedule a single supplement notification
+function scheduleSupplementNotification(
+  supplement,
+  timeOfDay,
+  notificationTime
+) {
+  const now = new Date();
+  const delay = notificationTime.getTime() - now.getTime();
+
+  if (delay <= 0) return; // Don't schedule past notifications
+
+  const timeoutId = setTimeout(() => {
+    showSupplementNotification(supplement, timeOfDay);
+
+    // Schedule the next day's notification
+    const nextDayTime = new Date(
+      notificationTime.getTime() + 24 * 60 * 60 * 1000
+    );
+    scheduleSupplementNotification(supplement, timeOfDay, nextDayTime);
+  }, delay);
+
+  const key = `${supplement.id}-${timeOfDay}`;
+  scheduledNotifications.set(key, timeoutId);
+}
+
+// Show a supplement notification
+function showSupplementNotification(supplement, timeOfDay) {
+  const timeLabels = {
+    MORNING: "Morning",
+    LUNCH: "Lunch",
+    DINNER: "Dinner",
+    BEFORE_SLEEP: "Before Sleep",
+  };
+
+  const timeLabel = timeLabels[timeOfDay] || timeOfDay;
+
+  const notificationOptions = {
+    body: `Time to take your ${supplement.name} (${timeLabel})`,
+    icon: "/icon-192x192.png",
+    badge: "/icon-192x192.png",
+    vibrate: [100, 50, 100],
+    data: {
+      dateOfArrival: Date.now(),
+      supplementId: supplement.id,
+      timeOfDay: timeOfDay,
+      url: "/todos",
+    },
+    actions: [
+      {
+        action: "mark-taken",
+        title: "Mark as Taken",
+      },
+      {
+        action: "view",
+        title: "View Supplements",
+      },
+    ],
+    requireInteraction: true,
+    tag: `supplement-${supplement.id}-${timeOfDay}`,
+  };
+
+  self.registration.showNotification(
+    `💊 ${supplement.name}`,
+    notificationOptions
+  );
+}
+
+// Clear all scheduled notifications
+function clearAllScheduledNotifications() {
+  console.log("Clearing all scheduled notifications");
+
+  scheduledNotifications.forEach((timeoutId) => {
+    clearTimeout(timeoutId);
+  });
+
+  scheduledNotifications.clear();
+}
 
 // Handle push subscription change
 self.addEventListener("pushsubscriptionchange", function (event) {

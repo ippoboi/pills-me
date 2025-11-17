@@ -188,6 +188,21 @@ export async function POST(request: Request) {
       throw new Error(insErr.message);
     }
 
+    // Initialize notification preferences with default values
+    const { error: prefsErr } = await supabase
+      .from("notification_preferences")
+      .insert({
+        user_id: userId,
+        supplement_reminders_enabled: true,
+        refill_reminders_enabled: true,
+        app_updates_enabled: true,
+        system_notifications_enabled: true,
+      });
+    if (prefsErr) {
+      console.error("Failed to create notification preferences:", prefsErr);
+      // Don't throw error - this is not critical for registration success
+    }
+
     // Log successful registration
     if (verification.verified) {
       await logAuditEvent({

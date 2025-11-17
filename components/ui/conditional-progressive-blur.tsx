@@ -8,9 +8,15 @@ export function ConditionalProgressiveBlur() {
   const isSupplementDetail = /^\/supplements\/[^/]+$/.test(pathname);
   const isProfilePage = /^\/profile$/.test(pathname);
 
-  return isSupplementDetail || isProfilePage ? null : (
+  return isSupplementDetail ? null : (
     <>
-      <ProgressiveBlur position="top" height="20%" className="fixed z-40" />
+      <ProgressiveBlur
+        position="top"
+        height="16%"
+        className={`${
+          isProfilePage ? "hidden md:block md:!fixed" : "fixed"
+        } z-40`}
+      />
       <ProgressiveBlur position="bottom" height="20%" className="fixed z-40" />
     </>
   );

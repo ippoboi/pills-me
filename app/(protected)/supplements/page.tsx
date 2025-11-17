@@ -18,7 +18,7 @@ function renderSupplementListContent(
   onRefetch: () => void
 ) {
   if (isLoading) {
-    return <ListLoadingState message="Loading supplements..." />;
+    return <ListLoadingState numberOfCards={6} />;
   }
 
   if (error) {
@@ -53,7 +53,7 @@ export default function SupplementsPage() {
   return (
     <div className="min-h-screen">
       <div className="max-w-4xl mx-auto overflow-visible px-4 md:px-8 lg:px-0">
-        <div className="h-40" />
+        <div className="h-32" />
 
         <SupplementCreationForm
           open={isFormOpen}
@@ -68,7 +68,7 @@ export default function SupplementsPage() {
           () => refetch()
         )}
 
-        <div className="h-96" />
+        <div className="h-40" />
       </div>
     </div>
   );

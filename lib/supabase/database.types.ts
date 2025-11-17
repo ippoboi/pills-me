@@ -52,7 +52,7 @@ export type Database = {
       }
       notification_preferences: {
         Row: {
-          achievement_notifications_enabled: boolean
+          app_updates_enabled: boolean
           created_at: string
           id: string
           refill_reminders_enabled: boolean
@@ -63,7 +63,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
-          achievement_notifications_enabled?: boolean
+          app_updates_enabled?: boolean
           created_at?: string
           id?: string
           refill_reminders_enabled?: boolean
@@ -74,7 +74,7 @@ export type Database = {
           user_id: string
         }
         Update: {
-          achievement_notifications_enabled?: boolean
+          app_updates_enabled?: boolean
           created_at?: string
           id?: string
           refill_reminders_enabled?: boolean

@@ -459,7 +459,7 @@ export default function SupplementCreationForm({
             {/* Header */}
             <motion.div
               layout
-              className="flex items-center w-80 md:w-full justify-between p-5 py-4 bg-gray-50 border-b border-b-gray-200"
+              className="flex items-center w-full min-w-80 justify-between p-5 py-4 bg-gray-50 border-b border-b-gray-200"
             >
               <h2 className="font-medium">Add a supplement</h2>
               {/* Progress indicator */}

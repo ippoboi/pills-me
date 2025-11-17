@@ -207,13 +207,27 @@ export async function sendNotification(
       return { success: true, sentCount: 0 };
     }
 
+    // Determine default URL based on notification type
+    let defaultUrl = "/todos"; // Default to todos for reminder notifications
+    if (payload.tag && payload.tag.includes("refill")) {
+      // Refill notification - use supplement ID if available
+      const supplementId = payload.data?.supplementId;
+      defaultUrl = supplementId ? `/supplements/${supplementId}` : "/todos";
+    } else if (payload.tag && payload.tag.includes("app-update")) {
+      // App update notification - redirect to todos
+      defaultUrl = "/todos";
+    } else if (payload.data?.supplementId && !payload.url) {
+      // Has supplement ID but no explicit URL - likely a refill notification
+      defaultUrl = `/supplements/${payload.data.supplementId}`;
+    }
+
     // Prepare notification payload
     const notificationPayload = JSON.stringify({
       title: payload.title,
       body: payload.body,
       icon: payload.icon || "/icon-192x192.png",
       badge: payload.badge || "/icon-192x192.png",
-      url: payload.url || "/supplements",
+      url: payload.url || defaultUrl,
       data: payload.data || {},
       actions: payload.actions || [],
       requireInteraction: payload.requireInteraction || false,
@@ -360,5 +374,46 @@ export async function getSubscriptionStatus() {
   } catch (error) {
     console.error("Error getting subscription status:", error);
     return { subscribed: false, count: 0 };
+  }
+}
+
+/**
+ * Clean up database subscriptions when browser permissions are revoked
+ * This helps keep the database in sync with actual browser state
+ */
+export async function cleanupRevokedSubscriptions() {
+  try {
+    // Get user from session cookie (WebAuthn auth)
+    const cookieStore = await cookies();
+    const sessionToken = cookieStore.get("pm_session")?.value;
+
+    if (!sessionToken) {
+      return { success: false, error: "User not authenticated" };
+    }
+
+    const sessionPayload = await verifySessionToken(sessionToken);
+    if (!sessionPayload?.uid) {
+      return { success: false, error: "Invalid session" };
+    }
+
+    const userId = sessionPayload.uid;
+    const supabase = createServiceRoleClient();
+
+    // Remove all subscriptions for this user
+    const { error: dbError } = await supabase
+      .from("push_subscriptions")
+      .delete()
+      .eq("user_id", userId);
+
+    if (dbError) {
+      console.error("Database error:", dbError);
+      return { success: false, error: "Failed to cleanup subscriptions" };
+    }
+
+    console.log("Cleaned up revoked subscriptions for user:", userId);
+    return { success: true };
+  } catch (error) {
+    console.error("Error cleaning up subscriptions:", error);
+    return { success: false, error: "Unexpected error occurred" };
   }
 }
