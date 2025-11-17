@@ -127,11 +127,7 @@ export default function AuthPage() {
             disabled={loading || lookingUpUser}
             className="w-full h-10 rounded-xl bg-white text-slate-900 font-medium hover:bg-gray-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
           >
-            {loading ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
-            ) : (
-              "Create passkey"
-            )}
+            Create passkey
           </button>
 
           <button

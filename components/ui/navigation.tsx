@@ -127,7 +127,9 @@ export function Navigation() {
                 ) : (
                   <Avatar className="bg-blue-100 text-blue-600 grayscale">
                     <AvatarImage src={user?.avatarUrl || ""} />
-                    <AvatarFallback>{initials}</AvatarFallback>
+                    <AvatarFallback>
+                      <span className="mt-px">{initials || "U"}</span>
+                    </AvatarFallback>
                   </Avatar>
                 )}
               </button>
@@ -157,7 +159,9 @@ export function Navigation() {
                   ) : (
                     <Avatar className="bg-blue-50 border border-blue-600 transition-colors duration-300">
                       <AvatarImage src={user?.avatarUrl || ""} />
-                      <AvatarFallback>{initials}</AvatarFallback>
+                      <AvatarFallback>
+                        <span className="mt-px">{initials}</span>
+                      </AvatarFallback>
                     </Avatar>
                   )}
                 </div>

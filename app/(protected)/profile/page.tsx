@@ -68,7 +68,9 @@ export default function ProfilePage() {
             <div className="flex items-center justify-center gap-4">
               <Avatar className="w-16 h-16">
                 <AvatarImage src={user?.avatarUrl || ""} />
-                <AvatarFallback>{initials}</AvatarFallback>
+                <AvatarFallback>
+                  <span className="mt-px">{initials}</span>
+                </AvatarFallback>
               </Avatar>
               <div className="space-y-1">
                 <p className="text-gray-500">Hey</p>
