@@ -9,6 +9,10 @@ import { useTodaySupplements } from "@/lib/hooks";
 import type { TodaySupplementsResponse } from "@/lib/types";
 import { useDateContext } from "@/lib/contexts/date-context";
 import InstallPrompt from "@/components/pwa/install-prompts";
+import { usePrefetchQuery } from "@tanstack/react-query";
+import { supplementsKeys } from "@/lib/queries/keys";
+import { getTodaySupplements } from "@/lib/queries/supplements";
+import { useMemo } from "react";
 
 // Reusable centered layout wrapper
 interface SupplementLayoutProps {
@@ -80,6 +84,20 @@ export default function ProtectedPage() {
     error: supplementsError,
     refetch: refetchSupplements,
   } = useTodaySupplements(date, timezone);
+
+  // Calculate previous day for prefetching
+  const previousDate = useMemo(() => {
+    const currentDate = new Date(date + "T12:00:00");
+    currentDate.setDate(currentDate.getDate() - 1);
+    return currentDate.toISOString().split("T")[0];
+  }, [date]);
+
+  // Prefetch previous day supplements for faster navigation
+  usePrefetchQuery({
+    queryKey: supplementsKeys.today(previousDate, timezone),
+    queryFn: () => getTodaySupplements(previousDate, timezone),
+    staleTime: 5 * 60 * 1000, // Match the main query's staleTime
+  });
 
   return (
     <SupplementLayout>

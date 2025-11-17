@@ -11,6 +11,7 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
+  // Fetch user data once and cache it globally
   const { data: user, error } = useCurrentUser();
 
   // Determine if user is authenticated
