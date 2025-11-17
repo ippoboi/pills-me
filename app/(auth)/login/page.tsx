@@ -11,6 +11,7 @@ import {
   Key01FreeIcons,
   LockPasswordFreeIcons,
 } from "@hugeicons/core-free-icons";
+import AuthLoadingScreen from "@/components/auth-loading-screen";
 
 export default function AuthPage() {
   const router = useRouter();
@@ -58,6 +59,10 @@ export default function AuthPage() {
       setLoading(false);
     }
   };
+
+  if (loading) {
+    return <AuthLoadingScreen />;
+  }
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-[url('/auth-illustration.jpg')] bg-cover bg-center relative overflow-hidden">
