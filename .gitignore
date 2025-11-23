@@ -45,3 +45,5 @@ next-env.d.ts
 
 **/public/workbox-*.js
 **/public/precache.*.js
+
+landing_page_copy.md

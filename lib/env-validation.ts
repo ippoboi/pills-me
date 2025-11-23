@@ -86,6 +86,11 @@ const REQUIRED_ENV_VARS = {
     validator: (value: string) => value.length > 0,
     description: "Must be a valid VAPID private key",
   },
+  CRON_SECRET: {
+    required: true,
+    validator: (value: string) => value.length >= 16,
+    description: "Must be at least 16 characters long for security",
+  },
 } as const;
 
 /**

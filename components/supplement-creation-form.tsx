@@ -1,5 +1,6 @@
 "use client";
 
+import { BackdropPortal } from "@/components/ui/backdrop-portal";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
 import {
@@ -7,10 +8,8 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import { BackdropPortal } from "@/components/ui/backdrop-portal";
 import { useCreateSupplement } from "@/lib/hooks";
-import { Database } from "@/lib/supabase/database.types";
-import { SupplementInput } from "@/lib/types";
+import { SupplementInput, TimeOfDay } from "@/lib/types";
 import { formatDateShort } from "@/lib/utils";
 import {
   Calendar04FreeIcons,
@@ -23,8 +22,6 @@ import { ChevronsUpDown, Loader2 } from "lucide-react";
 import { AnimatePresence, motion, MotionConfig } from "motion/react";
 import { useCallback, useEffect, useState } from "react";
 import useMeasure from "react-use-measure";
-
-type TimeOfDay = Database["public"]["Enums"]["time_of_day"];
 
 interface SupplementCreationFormProps {
   open: boolean;
@@ -728,67 +725,69 @@ export default function SupplementCreationForm({
                               >
                                 <div className="flex flex-wrap gap-0.5 items-center">
                                   {formData.time_of_day.length > 0 ? (
-                                    formData.time_of_day.map((time) => {
-                                      const label = (() => {
-                                        switch (time) {
-                                          case "MORNING":
-                                            return "Morning";
-                                          case "LUNCH":
-                                            return "Lunch";
-                                          case "DINNER":
-                                            return "Dinner";
-                                          case "BEFORE_SLEEP":
-                                            return "Before sleep";
-                                          default:
-                                            return time;
-                                        }
-                                      })();
-                                      return (
-                                        <span
-                                          key={time}
-                                          className="inline-flex items-center gap-1 pl-2 pr-1.5 py-1 rounded-lg bg-white border border-gray-200"
-                                        >
-                                          <span>{label}</span>
-                                          <div
-                                            role="button"
-                                            tabIndex={0}
-                                            onClick={(e) => {
-                                              e.stopPropagation();
-                                              if (
-                                                !createSupplementMutation.isPending
-                                              ) {
-                                                handleTimeOfDayRemove(time);
-                                              }
-                                            }}
-                                            onKeyDown={(e) => {
-                                              if (
-                                                e.key === "Enter" ||
-                                                e.key === " "
-                                              ) {
-                                                e.preventDefault();
+                                    formData.time_of_day.map(
+                                      (time: TimeOfDay) => {
+                                        const label = (() => {
+                                          switch (time) {
+                                            case "MORNING":
+                                              return "Morning";
+                                            case "LUNCH":
+                                              return "Lunch";
+                                            case "DINNER":
+                                              return "Dinner";
+                                            case "BEFORE_SLEEP":
+                                              return "Before sleep";
+                                            default:
+                                              return time;
+                                          }
+                                        })();
+                                        return (
+                                          <span
+                                            key={time}
+                                            className="inline-flex items-center gap-1 pl-2 pr-1.5 py-1 rounded-lg bg-white border border-gray-200"
+                                          >
+                                            <span>{label}</span>
+                                            <div
+                                              role="button"
+                                              tabIndex={0}
+                                              onClick={(e) => {
                                                 e.stopPropagation();
                                                 if (
                                                   !createSupplementMutation.isPending
                                                 ) {
                                                   handleTimeOfDayRemove(time);
                                                 }
-                                              }
-                                            }}
-                                            className={`flex items-center justify-center w-5 h-5 rounded hover:bg-gray-100 transition-colors cursor-pointer ${
-                                              createSupplementMutation.isPending
-                                                ? "opacity-50 cursor-not-allowed"
-                                                : ""
-                                            }`}
-                                          >
-                                            <HugeiconsIcon
-                                              icon={Cancel01FreeIcons}
-                                              className="w-3 h-3 text-gray-400 hover:text-gray-600"
-                                              strokeWidth={2}
-                                            />
-                                          </div>
-                                        </span>
-                                      );
-                                    })
+                                              }}
+                                              onKeyDown={(e) => {
+                                                if (
+                                                  e.key === "Enter" ||
+                                                  e.key === " "
+                                                ) {
+                                                  e.preventDefault();
+                                                  e.stopPropagation();
+                                                  if (
+                                                    !createSupplementMutation.isPending
+                                                  ) {
+                                                    handleTimeOfDayRemove(time);
+                                                  }
+                                                }
+                                              }}
+                                              className={`flex items-center justify-center w-5 h-5 rounded hover:bg-gray-100 transition-colors cursor-pointer ${
+                                                createSupplementMutation.isPending
+                                                  ? "opacity-50 cursor-not-allowed"
+                                                  : ""
+                                              }`}
+                                            >
+                                              <HugeiconsIcon
+                                                icon={Cancel01FreeIcons}
+                                                className="w-3 h-3 text-gray-400 hover:text-gray-600"
+                                                strokeWidth={2}
+                                              />
+                                            </div>
+                                          </span>
+                                        );
+                                      }
+                                    )
                                   ) : (
                                     <span className="text-gray-400 ml-3">
                                       Select time(s) of day

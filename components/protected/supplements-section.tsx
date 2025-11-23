@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Supplement, SupplementSchedule } from "@/lib/types";
+import { Supplement, SupplementSchedule, TimeOfDay } from "@/lib/types";
 import { motion } from "motion/react";
 import {
   Moon02FreeIcons,
@@ -11,8 +11,6 @@ import {
 } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon, HugeiconsIconProps } from "@hugeicons/react";
 import SupplementCard from "./supplement-card";
-
-type TimeOfDay = "MORNING" | "LUNCH" | "DINNER" | "BEFORE_SLEEP";
 
 interface SupplementsSectionProps {
   supplements: Supplement[];

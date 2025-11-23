@@ -5,6 +5,7 @@
 
 import { getUserTimezone } from "./timezone";
 import type { NotificationPreferences } from "@/lib/types/user";
+import type { TimeOfDay } from "@/lib/types";
 
 export interface SupplementWithSchedules {
   id: string;
@@ -13,7 +14,7 @@ export interface SupplementWithSchedules {
   deleted_at: string | null;
   schedules?: Array<{
     id: string;
-    time_of_day: "MORNING" | "LUNCH" | "DINNER" | "BEFORE_SLEEP";
+    time_of_day: TimeOfDay;
   }>;
 }
 
@@ -140,7 +141,7 @@ export function getNextNotificationTimes(
     return [];
   }
 
-  const hoursByTimeOfDay = {
+  const hoursByTimeOfDay: Record<TimeOfDay, number> = {
     MORNING: 8,
     LUNCH: 12,
     DINNER: 18,

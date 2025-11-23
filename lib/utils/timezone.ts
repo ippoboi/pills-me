@@ -242,11 +242,12 @@ export function createTimestampForDate(
  * This ensures unique timestamps for different schedules on the same day
  * Legacy function - kept for backward compatibility
  */
+import type { TimeOfDay } from "@/lib/types";
 export function createScheduleTimestamp(
   dateString: string,
-  timeOfDay: "MORNING" | "LUNCH" | "DINNER" | "BEFORE_SLEEP"
+  timeOfDay: TimeOfDay
 ): string {
-  const hoursByTimeOfDay: Record<string, number> = {
+  const hoursByTimeOfDay: Record<TimeOfDay, number> = {
     MORNING: 8,
     LUNCH: 12,
     DINNER: 18,

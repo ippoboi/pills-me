@@ -8,6 +8,7 @@ import {
   validateEnvironmentVariables,
   isServerEnvironment,
 } from "@/lib/env-validation";
+import { SpeedInsights } from "@vercel/speed-insights/next";
 
 // Validate environment variables on server startup
 if (isServerEnvironment()) {
@@ -55,6 +56,7 @@ export default function RootLayout({
               enableSystem={false}
               disableTransitionOnChange
             >
+              <SpeedInsights />
               {children}
             </ThemeProvider>
           </AuthProvider>
