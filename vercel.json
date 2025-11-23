@@ -23,11 +23,5 @@
       "source": "/sw.js",
       "destination": "/sw.js"
     }
-  ],
-  "crons": [
-    {
-      "path": "/api/push/send?action=scheduled",
-      "schedule": "0 8,12,18,22 * * *"
-    }
   ]
 }
