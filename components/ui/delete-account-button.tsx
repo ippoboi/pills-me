@@ -4,9 +4,13 @@ import { HugeiconsIcon } from "@hugeicons/react";
 import { Button } from "./button";
 import { Delete02FreeIcons } from "@hugeicons/core-free-icons";
 
-export function DeleteAccountButton() {
+interface DeleteAccountButtonProps {
+  onClick?: () => void;
+}
+
+export function DeleteAccountButton({ onClick }: DeleteAccountButtonProps) {
   return (
-    <Button variant={"destructive-secondary"}>
+    <Button variant={"destructive-secondary"} onClick={onClick}>
       <HugeiconsIcon icon={Delete02FreeIcons} strokeWidth={2} />
       Delete account
     </Button>

@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useEffect, useState } from "react";
+import { useMemo, useEffect, useState, useCallback } from "react";
 import { LogoutButton } from "@/components/logout-button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -22,6 +22,7 @@ import {
 } from "@/lib/hooks";
 import PushNotificationManager from "@/components/pwa/push-notification-manager";
 import { DeleteAccountButton } from "@/components/ui/delete-account-button";
+import DeleteAccountModal from "@/components/protected/delete-account-modal";
 
 export default function ProfilePage() {
   const { data: user, isLoading, error, isFetching } = useCurrentUser();
@@ -77,9 +78,32 @@ export default function ProfilePage() {
     updatePreference.mutate({ field, value });
   };
 
-  const handleTimezoneChange = (timezone: string) => {
-    updatePreference.mutate({ field: "timezone", value: timezone });
-  };
+  const handleTimezoneChange = useCallback(
+    (timezone: string) => {
+      updatePreference.mutate({ field: "timezone", value: timezone });
+    },
+    [updatePreference]
+  );
+
+  // Automatically set detected timezone if user still has UTC and we've detected a different timezone
+  useEffect(() => {
+    if (
+      detectedTimezone &&
+      detectedTimezone !== "UTC" &&
+      preferences?.timezone === "UTC" &&
+      !preferencesLoading &&
+      !updatePreference.isPending
+    ) {
+      console.log(`Auto-setting timezone to detected: ${detectedTimezone}`);
+      handleTimezoneChange(detectedTimezone);
+    }
+  }, [
+    detectedTimezone,
+    preferences?.timezone,
+    preferencesLoading,
+    updatePreference.isPending,
+    handleTimezoneChange,
+  ]);
 
   // Add detected timezone if it's not in the common list
   const allTimezones = useMemo(() => {
@@ -115,6 +139,8 @@ export default function ProfilePage() {
   // Check if user has fully enabled notifications (both database and browser)
   const hasFullyEnabledNotifications =
     subscriptionStatus?.isFullyEnabled === true;
+
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
 
   return (
     <div className="mx-auto min-h-screen pb-40 pt-4 md:py-32 md:pb-48 px-4 ">
@@ -299,9 +325,6 @@ export default function ProfilePage() {
 
             <div className="space-y-4">
               <div className="flex flex-col gap-2">
-                <label className="text-sm font-medium text-gray-700">
-                  Your Timezone
-                </label>
                 <div className="relative">
                   <Popover open={timezoneOpen} onOpenChange={setTimezoneOpen}>
                     <PopoverTrigger asChild>
@@ -343,25 +366,6 @@ export default function ProfilePage() {
                 </div>
               </div>
 
-              {preferences.timezone === "UTC" &&
-                detectedTimezone &&
-                detectedTimezone !== "UTC" && (
-                  <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
-                    <p className="text-sm text-blue-800">
-                      💡 We detected your timezone as{" "}
-                      <strong>{detectedTimezone}</strong>. Would you like to use
-                      this instead of UTC for more accurate local notifications?
-                    </p>
-                    <button
-                      onClick={() => handleTimezoneChange(detectedTimezone)}
-                      disabled={showPreferencesLoading}
-                      className="mt-2 text-sm text-blue-600 hover:text-blue-800 underline disabled:opacity-50"
-                    >
-                      Use detected timezone
-                    </button>
-                  </div>
-                )}
-
               <div className="text-xs text-gray-500">
                 Current timezone:{" "}
                 <strong>{preferences.timezone || "UTC"}</strong>
@@ -398,9 +402,15 @@ export default function ProfilePage() {
               information and passkey. This action cannot be undone.
             </p>
           </div>
-          <DeleteAccountButton />
+          <DeleteAccountButton onClick={() => setDeleteModalOpen(true)} />
         </div>
       </div>
+
+      {/* Delete Account Modal */}
+      <DeleteAccountModal
+        open={deleteModalOpen}
+        onClose={() => setDeleteModalOpen(false)}
+      />
     </div>
   );
 }

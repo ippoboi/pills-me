@@ -36,6 +36,7 @@
     "react-day-picker": "^9.11.1",
     "react-dom": "^19.0.0",
     "react-use-measure": "^2.1.7",
+    "sonner": "^2.0.7",
     "tailwind-merge": "^3.3.0",
     "web-push": "^3.6.7"
   },

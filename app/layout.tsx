@@ -9,6 +9,7 @@ import {
   isServerEnvironment,
 } from "@/lib/env-validation";
 import { SpeedInsights } from "@vercel/speed-insights/next";
+import { Toaster } from "sonner";
 
 // Validate environment variables on server startup
 if (isServerEnvironment()) {
@@ -58,6 +59,7 @@ export default function RootLayout({
             >
               <SpeedInsights />
               {children}
+              <Toaster position="top-center" />
             </ThemeProvider>
           </AuthProvider>
         </Providers>
