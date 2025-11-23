@@ -137,27 +137,31 @@ export async function GET(request: NextRequest) {
         );
       }
 
-      const timeOfDay = searchParams.get("timeOfDay") as TimeOfDay | null;
-
-      if (
-        !timeOfDay ||
-        !["MORNING", "LUNCH", "DINNER", "BEFORE_SLEEP"].includes(timeOfDay)
-      ) {
-        return NextResponse.json(
-          {
-            error: "Bad Request",
-            message:
-              'Missing or invalid "timeOfDay". Expected one of MORNING, LUNCH, DINNER, BEFORE_SLEEP.',
-          },
-          { status: 400 }
-        );
-      }
-
       // NOTE: For now we treat all cron jobs as running in UTC.
       // We use the existing time-of-day buckets (8,12,18,22) in UTC,
       // reusing the same mapping logic used elsewhere in the app.
       const timezone = "UTC";
       const now = new Date();
+
+      // Infer current time-of-day slot from the current UTC hour.
+      const currentHour = now.getUTCHours();
+      const hourToTimeOfDay: Record<number, TimeOfDay> = {
+        8: "MORNING",
+        12: "LUNCH",
+        18: "DINNER",
+        22: "BEFORE_SLEEP",
+      };
+
+      const timeOfDay = hourToTimeOfDay[currentHour];
+
+      if (!timeOfDay) {
+        // Cron may run at unexpected times; no reminders should fire.
+        return NextResponse.json({
+          message: "No scheduled reminders for this hour",
+          hour: currentHour,
+        });
+      }
+
       const todayDate = formatUTCToLocalDate(now.toISOString(), timezone);
       const [startOfDay, endOfDay] = getLocalDayBoundariesInUTC(
         todayDate,

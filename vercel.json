@@ -26,20 +26,8 @@
   ],
   "crons": [
     {
-      "path": "/api/push/send?action=scheduled&timeOfDay=MORNING",
-      "schedule": "0 8 * * *"
-    },
-    {
-      "path": "/api/push/send?action=scheduled&timeOfDay=LUNCH",
-      "schedule": "0 12 * * *"
-    },
-    {
-      "path": "/api/push/send?action=scheduled&timeOfDay=DINNER",
-      "schedule": "0 18 * * *"
-    },
-    {
-      "path": "/api/push/send?action=scheduled&timeOfDay=BEFORE_SLEEP",
-      "schedule": "0 22 * * *"
+      "path": "/api/push/send?action=scheduled",
+      "schedule": "0 8,12,18,22 * * *"
     }
   ]
 }
