@@ -9,17 +9,13 @@ import type { Database } from "@/lib/supabase/database.types";
 import type { TimeOfDay } from "@/lib/types";
 import { getEnvVar } from "@/lib/env-validation";
 import {
-  formatUTCToLocalDate,
-  getLocalDayBoundariesInUTC,
+  getLocalDayBoundariesInUTCForUser,
+  getLocalDateForTimezone,
 } from "@/lib/utils/timezone";
-
-// Time-of-day buckets already used across the project
-const TIME_OF_DAY_LABELS: Record<TimeOfDay, string> = {
-  MORNING: "Morning",
-  LUNCH: "Lunch",
-  DINNER: "Dinner",
-  BEFORE_SLEEP: "Before Sleep",
-};
+import {
+  isWithinNotificationWindow,
+  formatTimeOfDayLabel,
+} from "@/lib/utils/notifications-time";
 
 function createServiceRoleSupabase() {
   return createServiceRoleClient<Database>(
@@ -34,69 +30,62 @@ function createServiceRoleSupabase() {
   );
 }
 
+// POST endpoint for sending notifications
 export async function POST(request: NextRequest) {
   try {
     const supabase = await createClient();
 
-    // Verify authentication - only authenticated users can send notifications
+    // Get the current user
     const {
       data: { user },
       error: authError,
     } = await supabase.auth.getUser();
 
     if (authError || !user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return NextResponse.json(
+        { error: "Unauthorized", message: "Authentication required" },
+        { status: 401 }
+      );
     }
 
-    // Parse request body
     const body = await request.json();
-    const { userId, payload } = body;
+    const { title, message, data } = body;
 
-    // Validate required fields
-    if (!userId || !payload) {
+    if (!title || !message) {
       return NextResponse.json(
-        { error: "Missing required fields: userId and payload" },
+        { error: "Bad Request", message: "Title and message are required" },
         { status: 400 }
       );
     }
 
-    // Validate payload structure
-    if (!payload.title || !payload.body) {
-      return NextResponse.json(
-        { error: "Payload must include title and body" },
-        { status: 400 }
-      );
-    }
+    // Create notification payload
+    const payload: NotificationPayload = {
+      title,
+      body: message,
+      data: data || {},
+      tag: "manual-notification",
+    };
 
-    // For security, only allow users to send notifications to themselves
-    // In a production app, you might want admin users to send to others
-    if (userId !== user.id) {
-      return NextResponse.json(
-        { error: "You can only send notifications to yourself" },
-        { status: 403 }
-      );
-    }
-
-    // Send the notification
-    const result = await sendNotification(
-      userId,
-      payload as NotificationPayload
-    );
+    // Send notification to the current user
+    const result = await sendNotification(user.id, payload);
 
     if (result.success) {
       return NextResponse.json({
         success: true,
+        message: "Notification sent successfully",
         sentCount: result.sentCount,
-        message: `Notification sent to ${result.sentCount} device(s)`,
       });
     } else {
       return NextResponse.json(
-        { error: result.error || "Failed to send notification" },
+        {
+          error: "Failed to send notification",
+          message: result.error || "Unknown error occurred",
+        },
         { status: 500 }
       );
     }
   } catch (error) {
-    console.error("Error in push notification API:", error);
+    console.error("Error in push notification POST API:", error);
     return NextResponse.json(
       { error: "Internal server error" },
       { status: 500 }
@@ -118,10 +107,9 @@ export async function GET(request: NextRequest) {
       });
     }
 
-    // For scheduled notifications triggered by Vercel Cron
+    // For scheduled notifications triggered by Supabase Cron (every 15 minutes)
     if (action === "scheduled") {
       // Verify cron secret for security
-      // Vercel automatically sends CRON_SECRET in Authorization header as "Bearer <secret>"
       const authHeader = request.headers.get("authorization");
       const expectedSecret = getEnvVar("CRON_SECRET");
       const expectedAuth = `Bearer ${expectedSecret}`;
@@ -137,266 +125,241 @@ export async function GET(request: NextRequest) {
         );
       }
 
-      // NOTE: For now we treat all cron jobs as running in UTC.
-      // We use the existing time-of-day buckets (8,12,18,22) in UTC,
-      // reusing the same mapping logic used elsewhere in the app.
-      const timezone = "UTC";
       const now = new Date();
-
-      // Infer current time-of-day slot from the current UTC hour.
-      const currentHour = now.getUTCHours();
-      const hourToTimeOfDay: Record<number, TimeOfDay> = {
-        8: "MORNING",
-        12: "LUNCH",
-        18: "DINNER",
-        22: "BEFORE_SLEEP",
-      };
-
-      const timeOfDay = hourToTimeOfDay[currentHour];
-
-      if (!timeOfDay) {
-        // Cron may run at unexpected times; no reminders should fire.
-        return NextResponse.json({
-          message: "No scheduled reminders for this hour",
-          hour: currentHour,
-        });
-      }
-
-      const todayDate = formatUTCToLocalDate(now.toISOString(), timezone);
-      const [startOfDay, endOfDay] = getLocalDayBoundariesInUTC(
-        todayDate,
-        timezone
-      );
-
       const supabase = createServiceRoleSupabase();
 
-      // 1) Fetch all active supplements that:
-      //    - belong to any user
-      //    - are active for "today" (based on UTC day range)
-      //    - have a schedule matching this timeOfDay
-      const { data: supplements, error: supplementsError } = await supabase
-        .from("supplements")
-        .select(
-          `
-          id,
-          user_id,
-          name,
-          status,
-          deleted_at,
-          start_date,
-          end_date,
-          supplement_schedules!inner (
-            id,
-            time_of_day
-          )
-        `
-        )
-        .eq("status", "ACTIVE")
-        .is("deleted_at", null)
-        .lte("start_date", endOfDay)
-        .or(`end_date.is.null,end_date.gte.${startOfDay}`)
-        .eq("supplement_schedules.time_of_day", timeOfDay);
+      console.log(
+        `[cron] Processing scheduled notifications at ${now.toISOString()}`
+      );
 
-      if (supplementsError) {
-        console.error(
-          "[cron] Error fetching supplements for scheduled notifications:",
-          supplementsError
-        );
+      // 1) Fetch all users with notification preferences enabled
+      const { data: enabledUsers, error: usersError } = await supabase
+        .from("notification_preferences")
+        .select(
+          "user_id, timezone, system_notifications_enabled, supplement_reminders_enabled"
+        )
+        .eq("system_notifications_enabled", true)
+        .eq("supplement_reminders_enabled", true);
+
+      if (usersError) {
+        console.error("[cron] Error fetching enabled users:", usersError);
         return NextResponse.json(
           {
             error: "Internal Server Error",
-            message: "Failed to fetch supplements for scheduled notifications",
+            message: "Failed to fetch enabled users",
           },
           { status: 500 }
         );
       }
 
-      if (!supplements || supplements.length === 0) {
+      if (!enabledUsers || enabledUsers.length === 0) {
         return NextResponse.json({
-          message: "No supplements found for scheduled notifications",
-          timeOfDay,
+          message: "No users with notifications enabled",
+          processedUsers: 0,
         });
       }
 
-      type SupplementRow = (typeof supplements)[number] & {
-        supplement_schedules: { id: string; time_of_day: TimeOfDay }[];
-      };
-
-      const typedSupplements = supplements as SupplementRow[];
-
-      const userIds = Array.from(
-        new Set(typedSupplements.map((s) => s.user_id))
+      console.log(
+        `[cron] Found ${enabledUsers.length} users with notifications enabled`
       );
 
-      // 2) Load notification preferences for all involved users
-      const { data: preferences, error: preferencesError } = await supabase
-        .from("notification_preferences")
-        .select(
-          "user_id, system_notifications_enabled, supplement_reminders_enabled"
-        )
-        .in("user_id", userIds);
-
-      if (preferencesError) {
-        console.error(
-          "[cron] Error fetching notification preferences:",
-          preferencesError
-        );
-        return NextResponse.json(
-          {
-            error: "Internal Server Error",
-            message: "Failed to fetch notification preferences",
-          },
-          { status: 500 }
-        );
-      }
-
-      const prefsByUser = new Map<
+      // 2) Process each user individually based on their timezone
+      const userNotifications = new Map<
         string,
         {
-          system_notifications_enabled: boolean;
-          supplement_reminders_enabled: boolean;
+          timeOfDay: TimeOfDay;
+          localTime: string;
+          supplements: Array<{
+            supplementId: string;
+            supplementName: string;
+            scheduleId: string;
+          }>;
         }
       >();
 
-      (preferences || []).forEach((p) => {
-        prefsByUser.set(p.user_id, {
-          system_notifications_enabled: p.system_notifications_enabled,
-          supplement_reminders_enabled: p.supplement_reminders_enabled,
-        });
-      });
+      for (const user of enabledUsers) {
+        const userTimezone = user.timezone || "UTC";
 
-      // Filter out supplements for users who disabled notifications
-      const supplementsWithPrefs = typedSupplements.filter((s) => {
-        const prefs = prefsByUser.get(s.user_id);
-        return (
-          prefs?.system_notifications_enabled &&
-          prefs?.supplement_reminders_enabled
+        // Check if current time is within any notification window for this user
+        const { timeOfDay, localTime } = isWithinNotificationWindow(
+          now,
+          userTimezone
         );
-      });
 
-      if (supplementsWithPrefs.length === 0) {
-        return NextResponse.json({
-          message:
-            "No users with supplement reminders enabled for this timeOfDay",
-          timeOfDay,
-        });
-      }
+        if (!timeOfDay) {
+          // Not within any notification window for this user
+          continue;
+        }
 
-      // 3) Fetch today's adherence for all candidate (user, supplement, schedule)
-      const supplementIds = Array.from(
-        new Set(supplementsWithPrefs.map((s) => s.id))
-      );
-      const scheduleIds = Array.from(
-        new Set(
-          supplementsWithPrefs.flatMap((s) =>
-            s.supplement_schedules.map((sc) => sc.id)
+        console.log(
+          `[cron] User ${user.user_id} (${userTimezone}): ${localTime} -> ${timeOfDay}`
+        );
+
+        // Get user's local date and day boundaries in UTC
+        const localDate = getLocalDateForTimezone(userTimezone, now);
+        const [startOfDay, endOfDay] = getLocalDayBoundariesInUTCForUser(
+          localDate,
+          userTimezone
+        );
+
+        // 3) Fetch active supplements for this user and timeOfDay
+        const { data: supplements, error: supplementsError } = await supabase
+          .from("supplements")
+          .select(
+            `
+            id,
+            name,
+            status,
+            deleted_at,
+            start_date,
+            end_date,
+            supplement_schedules!inner (
+              id,
+              time_of_day
+            )
+          `
           )
-        )
-      );
+          .eq("user_id", user.user_id)
+          .eq("status", "ACTIVE")
+          .is("deleted_at", null)
+          .lte("start_date", endOfDay)
+          .or(`end_date.is.null,end_date.gte.${startOfDay}`)
+          .eq("supplement_schedules.time_of_day", timeOfDay);
 
-      const { data: adherence, error: adherenceError } = await supabase
-        .from("supplement_adherence")
-        .select("user_id, supplement_id, schedule_id")
-        .in("user_id", userIds)
-        .in("supplement_id", supplementIds)
-        .in("schedule_id", scheduleIds)
-        .gte("taken_at", startOfDay)
-        .lt("taken_at", endOfDay);
+        if (supplementsError) {
+          console.error(
+            `[cron] Error fetching supplements for user ${user.user_id}:`,
+            supplementsError
+          );
+          continue;
+        }
 
-      if (adherenceError) {
-        console.error(
-          "[cron] Error fetching adherence for scheduled notifications:",
-          adherenceError
+        if (!supplements || supplements.length === 0) {
+          continue;
+        }
+
+        // 4) Check adherence for this user's supplements today
+        const supplementScheduleIds = supplements.flatMap((s) =>
+          s.supplement_schedules.map((sch) => sch.id)
         );
-        return NextResponse.json(
-          {
-            error: "Internal Server Error",
-            message: "Failed to fetch adherence for scheduled notifications",
-          },
-          { status: 500 }
+
+        const { data: adherenceRecords, error: adherenceError } = await supabase
+          .from("supplement_adherence")
+          .select("supplement_id, schedule_id")
+          .eq("user_id", user.user_id)
+          .in("schedule_id", supplementScheduleIds)
+          .gte("taken_at", startOfDay)
+          .lte("taken_at", endOfDay);
+
+        if (adherenceError) {
+          console.error(
+            `[cron] Error fetching adherence for user ${user.user_id}:`,
+            adherenceError
+          );
+          continue;
+        }
+
+        const takenMap = new Set(
+          adherenceRecords?.map((a) => `${a.supplement_id}-${a.schedule_id}`)
         );
-      }
 
-      const takenSet = new Set(
-        (adherence || []).map(
-          (a) => `${a.user_id}-${a.supplement_id}-${a.schedule_id}`
-        )
-      );
+        // 5) Collect untaken supplements for this user
+        const untakenSupplements: Array<{
+          supplementId: string;
+          supplementName: string;
+          scheduleId: string;
+        }> = [];
 
-      // 4) Group due reminders by user and send notifications
-      const notificationsByUser = new Map<
-        string,
-        { supplementId: string; supplementName: string; scheduleId: string }[]
-      >();
+        supplements.forEach((supplement) => {
+          supplement.supplement_schedules.forEach((schedule) => {
+            if (schedule.time_of_day !== timeOfDay) return;
 
-      for (const supplement of supplementsWithPrefs) {
-        for (const schedule of supplement.supplement_schedules) {
-          const key = `${supplement.user_id}-${supplement.id}-${schedule.id}`;
-          if (takenSet.has(key)) {
-            continue; // already marked as taken today
-          }
+            const key = `${supplement.id}-${schedule.id}`;
+            if (!takenMap.has(key)) {
+              untakenSupplements.push({
+                supplementId: supplement.id,
+                supplementName: supplement.name,
+                scheduleId: schedule.id,
+              });
+            }
+          });
+        });
 
-          if (schedule.time_of_day !== timeOfDay) continue;
-
-          if (!notificationsByUser.has(supplement.user_id)) {
-            notificationsByUser.set(supplement.user_id, []);
-          }
-
-          notificationsByUser.get(supplement.user_id)!.push({
-            supplementId: supplement.id,
-            supplementName: supplement.name,
-            scheduleId: schedule.id,
+        if (untakenSupplements.length > 0) {
+          userNotifications.set(user.user_id, {
+            timeOfDay,
+            localTime,
+            supplements: untakenSupplements,
           });
         }
       }
 
-      if (notificationsByUser.size === 0) {
-        return NextResponse.json({
-          message: "No due reminders for this timeOfDay",
-          timeOfDay,
-        });
-      }
+      // 6) Send notifications to users who have untaken supplements
+      const sendPromises = Array.from(userNotifications.entries()).map(
+        async ([userId, { timeOfDay, localTime, supplements }]) => {
+          const timeOfDayLabel = formatTimeOfDayLabel(timeOfDay);
+          let body = "";
 
-      const timeOfDayLabel = TIME_OF_DAY_LABELS[timeOfDay] ?? timeOfDay;
+          if (supplements.length === 1) {
+            body = `Time to take your ${supplements[0].supplementName} (${timeOfDayLabel})`;
+          } else {
+            body = `Time to take ${
+              supplements.length
+            } supplements: ${supplements
+              .map((s) => s.supplementName)
+              .join(", ")} (${timeOfDayLabel})`;
+          }
 
-      let totalNotifications = 0;
+          const first = supplements[0];
+          const payload: NotificationPayload = {
+            title: `Time for your ${timeOfDayLabel} supplements`,
+            body,
+            data: {
+              timeOfDay,
+              supplementId: first.supplementId,
+              scheduleIds: supplements.map((s) => s.scheduleId),
+            },
+            tag: `supplement-reminder-${timeOfDay.toLowerCase()}`,
+          };
 
-      // Send one aggregated notification per user for this time-of-day
-      for (const [userId, items] of notificationsByUser.entries()) {
-        const first = items[0];
-        const count = items.length;
-
-        const body =
-          count === 1
-            ? `Time to take your ${timeOfDayLabel.toLowerCase()} dose of ${
-                first.supplementName
-              }.`
-            : `You have ${count} ${timeOfDayLabel.toLowerCase()} supplements to take today.`;
-
-        const payload: NotificationPayload = {
-          title: `Time for your ${timeOfDayLabel} supplements`,
-          body,
-          // Default URL is /todos; service worker will route appropriately
-          data: {
+          const result = await sendNotification(userId, payload);
+          return {
+            userId,
             timeOfDay,
-            // Provide the first supplement ID for smarter routing if needed
-            supplementId: first.supplementId,
-            scheduleIds: items.map((i) => i.scheduleId),
-          },
-          tag: `supplement-reminder-${timeOfDay.toLowerCase()}`,
-        };
-
-        const result = await sendNotification(userId, payload);
-        if (result.success && (result.sentCount || 0) > 0) {
-          totalNotifications += result.sentCount || 0;
+            localTime,
+            supplementCount: supplements.length,
+            success: result.success,
+            error: result.error,
+          };
         }
-      }
+      );
+
+      const results = await Promise.all(sendPromises);
+      const successfulSends = results.filter((r) => r.success).length;
+
+      console.log(
+        `[cron] Processed ${enabledUsers.length} users, sent ${successfulSends} notifications`
+      );
+
+      // Log details for debugging
+      results.forEach((result) => {
+        if (result.success) {
+          console.log(
+            `[cron] ✓ Sent to user ${result.userId}: ${result.supplementCount} supplements at ${result.localTime} (${result.timeOfDay})`
+          );
+        } else {
+          console.log(
+            `[cron] ✗ Failed to send to user ${result.userId}: ${result.error}`
+          );
+        }
+      });
 
       return NextResponse.json({
-        message: "Scheduled notifications processed",
-        timeOfDay,
-        usersWithReminders: notificationsByUser.size,
-        totalNotificationsSent: totalNotifications,
+        message: "Per-user scheduled notifications processed",
+        processedUsers: enabledUsers.length,
+        sentCount: successfulSends,
+        totalNotifications: results.length,
+        details: results,
       });
     }
 

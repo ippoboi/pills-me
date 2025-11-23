@@ -1,12 +1,18 @@
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, useEffect, useState } from "react";
 import { LogoutButton } from "@/components/logout-button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 import { Edit04FreeIcons } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
+import { ChevronsUpDown } from "lucide-react";
 
 import { useCurrentUser } from "@/lib/hooks";
 import {
@@ -43,6 +49,23 @@ export default function ProfilePage() {
   const showPreferencesLoading =
     preferencesLoading || updatePreference.isPending;
 
+  const [timezoneOpen, setTimezoneOpen] = useState(false);
+
+  const [detectedTimezone, setDetectedTimezone] = useState<string>("");
+
+  // Detect user's timezone on client side
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      try {
+        const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+        setDetectedTimezone(timezone);
+      } catch (error) {
+        console.warn("Could not detect timezone:", error);
+        setDetectedTimezone("UTC");
+      }
+    }
+  }, []);
+
   const handleTogglePreference = (
     field:
       | "supplement_reminders_enabled"
@@ -53,6 +76,41 @@ export default function ProfilePage() {
   ) => {
     updatePreference.mutate({ field, value });
   };
+
+  const handleTimezoneChange = (timezone: string) => {
+    updatePreference.mutate({ field: "timezone", value: timezone });
+  };
+
+  // Add detected timezone if it's not in the common list
+  const allTimezones = useMemo(() => {
+    // Common timezones for the dropdown
+    const commonTimezones = [
+      { value: "UTC", label: "UTC (Coordinated Universal Time)" },
+      { value: "America/New_York", label: "Eastern Time (New York)" },
+      { value: "America/Chicago", label: "Central Time (Chicago)" },
+      { value: "America/Denver", label: "Mountain Time (Denver)" },
+      { value: "America/Los_Angeles", label: "Pacific Time (Los Angeles)" },
+      { value: "Europe/London", label: "GMT (London)" },
+      { value: "Europe/Paris", label: "CET (Paris)" },
+      { value: "Europe/Berlin", label: "CET (Berlin)" },
+      { value: "Asia/Tokyo", label: "JST (Tokyo)" },
+      { value: "Asia/Shanghai", label: "CST (Shanghai)" },
+      { value: "Asia/Kolkata", label: "IST (India)" },
+      { value: "Asia/Bangkok", label: "ICT (Bangkok)" },
+      { value: "Australia/Sydney", label: "AEDT (Sydney)" },
+    ];
+
+    if (
+      detectedTimezone &&
+      !commonTimezones.some((tz) => tz.value === detectedTimezone)
+    ) {
+      return [
+        { value: detectedTimezone, label: `${detectedTimezone} (Detected)` },
+        ...commonTimezones,
+      ];
+    }
+    return commonTimezones;
+  }, [detectedTimezone]);
 
   // Check if user has fully enabled notifications (both database and browser)
   const hasFullyEnabledNotifications =
@@ -223,6 +281,102 @@ export default function ProfilePage() {
                     !preferences?.system_notifications_enabled
                   }
                 />
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Timezone Settings Section */}
+        {preferences && (
+          <div className="flex w-full flex-col gap-4 bg-white p-6 md:p-8 rounded-[32px] shadow-sm">
+            <div className="space-y-2">
+              <h2 className="uppercase text-gray-500">Timezone Settings</h2>
+              <p className="text-gray-600 text-sm">
+                Set your local timezone for accurate notification timing.
+                Reminders will be sent at your local time.
+              </p>
+            </div>
+
+            <div className="space-y-4">
+              <div className="flex flex-col gap-2">
+                <label className="text-sm font-medium text-gray-700">
+                  Your Timezone
+                </label>
+                <div className="relative">
+                  <Popover open={timezoneOpen} onOpenChange={setTimezoneOpen}>
+                    <PopoverTrigger asChild>
+                      <button
+                        disabled={showPreferencesLoading}
+                        className="w-full px-3 pr-10 h-10 border border-gray-100 rounded-xl bg-zinc-50 focus:outline-none focus:ring-2 focus:ring-blue-500 text-left disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        <span className="text-gray-900">
+                          {allTimezones.find(
+                            (tz) => tz.value === (preferences.timezone || "UTC")
+                          )?.label || "UTC (Coordinated Universal Time)"}
+                        </span>
+                        <div className="pointer-events-none bg-white rounded-[10px] h-9 w-9 border border-gray-200 absolute right-0.5 top-1/2 -translate-y-1/2 flex items-center justify-center">
+                          <ChevronsUpDown className="w-5 h-5 text-gray-400" />
+                        </div>
+                      </button>
+                    </PopoverTrigger>
+                    <PopoverContent
+                      className="p-0 w-full max-w-sm"
+                      align="start"
+                    >
+                      <div className="p-1 space-y-1 max-h-60 overflow-y-auto">
+                        {allTimezones.map((tz) => (
+                          <button
+                            key={tz.value}
+                            onClick={() => {
+                              handleTimezoneChange(tz.value);
+                              setTimezoneOpen(false);
+                            }}
+                            disabled={showPreferencesLoading}
+                            className="w-full text-left px-3 py-2 rounded-xl hover:bg-gray-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-sm"
+                          >
+                            {tz.label}
+                          </button>
+                        ))}
+                      </div>
+                    </PopoverContent>
+                  </Popover>
+                </div>
+              </div>
+
+              {preferences.timezone === "UTC" &&
+                detectedTimezone &&
+                detectedTimezone !== "UTC" && (
+                  <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                    <p className="text-sm text-blue-800">
+                      💡 We detected your timezone as{" "}
+                      <strong>{detectedTimezone}</strong>. Would you like to use
+                      this instead of UTC for more accurate local notifications?
+                    </p>
+                    <button
+                      onClick={() => handleTimezoneChange(detectedTimezone)}
+                      disabled={showPreferencesLoading}
+                      className="mt-2 text-sm text-blue-600 hover:text-blue-800 underline disabled:opacity-50"
+                    >
+                      Use detected timezone
+                    </button>
+                  </div>
+                )}
+
+              <div className="text-xs text-gray-500">
+                Current timezone:{" "}
+                <strong>{preferences.timezone || "UTC"}</strong>
+                {preferences.timezone && preferences.timezone !== "UTC" && (
+                  <span className="ml-2">
+                    (Local time:{" "}
+                    {new Date().toLocaleString("en-US", {
+                      timeZone: preferences.timezone,
+                      hour: "2-digit",
+                      minute: "2-digit",
+                      timeZoneName: "short",
+                    })}
+                    )
+                  </span>
+                )}
               </div>
             </div>
           </div>

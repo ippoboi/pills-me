@@ -76,6 +76,7 @@ export async function getNotificationPreferences(): Promise<GetNotificationPrefe
           refill_reminders_enabled: true,
           app_updates_enabled: true,
           system_notifications_enabled: true,
+          timezone: "UTC", // Default timezone, will be updated by user
         })
         .select()
         .single();
@@ -105,8 +106,9 @@ export async function updateNotificationPreference(
     | "refill_reminders_enabled"
     | "app_updates_enabled"
     | "system_notifications_enabled"
+    | "timezone"
   >,
-  value: boolean
+  value: boolean | string
 ): Promise<UpdateNotificationPreferenceResult> {
   try {
     // Get user from session cookie (WebAuthn auth)
@@ -131,10 +133,24 @@ export async function updateNotificationPreference(
       "refill_reminders_enabled",
       "app_updates_enabled",
       "system_notifications_enabled",
+      "timezone",
     ];
 
     if (!validFields.includes(field)) {
       return { success: false, error: "Invalid preference field" };
+    }
+
+    // Additional validation for timezone field
+    if (field === "timezone" && typeof value !== "string") {
+      return { success: false, error: "Timezone must be a string" };
+    }
+
+    if (
+      field === "timezone" &&
+      typeof value === "string" &&
+      value.trim() === ""
+    ) {
+      return { success: false, error: "Timezone cannot be empty" };
     }
 
     // Update the preference
@@ -169,6 +185,7 @@ export async function updateNotificationPreferences(
       | "refill_reminders_enabled"
       | "app_updates_enabled"
       | "system_notifications_enabled"
+      | "timezone"
     >
   >
 ): Promise<UpdateNotificationPreferenceResult> {

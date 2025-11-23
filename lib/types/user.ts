@@ -8,6 +8,7 @@ export interface NotificationPreferences {
   app_updates_enabled: boolean;
   system_notifications_enabled: boolean;
   reminder_times: Database["public"]["Tables"]["notification_preferences"]["Row"]["reminder_times"];
+  timezone: string;
   created_at: string;
   updated_at: string;
 }

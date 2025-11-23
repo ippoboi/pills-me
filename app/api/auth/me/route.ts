@@ -32,11 +32,12 @@ export async function GET(request: Request) {
       .eq("user_id", data.user.id)
       .maybeSingle();
 
-    // Get supplements count
+    // Get supplements count (excluding deleted supplements)
     const { count: supplementsCount, error: countError } = await supabase
       .from("supplements")
       .select("id", { count: "exact", head: true })
-      .eq("user_id", data.user.id);
+      .eq("user_id", data.user.id)
+      .is("deleted_at", null);
 
     // Get all adherence records to calculate day streak
     const { data: adherenceRecords, error: dayStreakError } = await supabase

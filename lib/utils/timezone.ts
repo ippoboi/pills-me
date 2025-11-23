@@ -316,3 +316,99 @@ export function isValidTimestamp(timestamp: string): boolean {
 export function getTodayDate(): string {
   return new Date().toISOString().split("T")[0];
 }
+
+/**
+ * Get local day boundaries in UTC for a specific user timezone
+ * This is an enhanced version that accepts a user-specific timezone
+ *
+ * @param localDate - Date in YYYY-MM-DD format in the user's local timezone
+ * @param userTimezone - User's IANA timezone (e.g., "Asia/Bangkok", "America/New_York")
+ * @returns [startOfDay, endOfDay] in UTC ISO strings
+ */
+export function getLocalDayBoundariesInUTCForUser(
+  localDate: string,
+  userTimezone: string
+): [string, string] {
+  try {
+    // Create start of day (00:00:00) in user's timezone
+    const startOfDayLocal = new Date(`${localDate}T00:00:00`);
+
+    // Create end of day (23:59:59.999) in user's timezone
+    const endOfDayLocal = new Date(`${localDate}T23:59:59.999`);
+
+    // Convert to UTC by adjusting for timezone offset
+    const startOfDayUTC = convertLocalToUTC(startOfDayLocal, userTimezone);
+    const endOfDayUTC = convertLocalToUTC(endOfDayLocal, userTimezone);
+
+    return [startOfDayUTC.toISOString(), endOfDayUTC.toISOString()];
+  } catch (error) {
+    console.error(
+      `Error calculating day boundaries for timezone ${userTimezone}:`,
+      error
+    );
+    // Fallback to the original function with UTC
+    return getLocalDayBoundariesInUTC(localDate, "UTC");
+  }
+}
+
+/**
+ * Convert a local time to UTC for a specific timezone
+ *
+ * @param localTime - Date object representing local time
+ * @param timezone - IANA timezone string
+ * @returns Date object in UTC
+ */
+function convertLocalToUTC(localTime: Date, timezone: string): Date {
+  try {
+    // Get the timezone offset for this specific date/time
+    const utcTime = localTime.getTime();
+
+    // Create a date in the target timezone
+    const tempDate = new Date(
+      localTime.toLocaleString("en-US", { timeZone: timezone })
+    );
+    const utcDate = new Date(
+      localTime.toLocaleString("en-US", { timeZone: "UTC" })
+    );
+
+    // Calculate the offset
+    const offset = tempDate.getTime() - utcDate.getTime();
+
+    // Apply the offset to get UTC time
+    return new Date(utcTime - offset);
+  } catch (error) {
+    console.error(
+      `Error converting local time to UTC for timezone ${timezone}:`,
+      error
+    );
+    // Fallback: return the original time (assume it's already UTC)
+    return localTime;
+  }
+}
+
+/**
+ * Get the current local date for a specific timezone
+ *
+ * @param timezone - IANA timezone string
+ * @param baseTime - Base time to use (defaults to now)
+ * @returns Local date in YYYY-MM-DD format
+ */
+export function getLocalDateForTimezone(
+  timezone: string,
+  baseTime: Date = new Date()
+): string {
+  try {
+    const formatter = new Intl.DateTimeFormat("en-CA", {
+      timeZone: timezone,
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+    });
+
+    return formatter.format(baseTime);
+  } catch (error) {
+    console.error(`Error getting local date for timezone ${timezone}:`, error);
+    // Fallback to UTC date
+    return baseTime.toISOString().split("T")[0];
+  }
+}

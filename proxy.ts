@@ -16,6 +16,10 @@ export async function proxy(request: NextRequest) {
   if (cookie) {
     const payload = await verifySessionToken(cookie);
     if (payload?.uid) {
+      // If authenticated user hits landing page, redirect to dashboard
+      if (request.nextUrl.pathname === "/") {
+        return NextResponse.redirect(new URL("/todos", request.url));
+      }
       // Consider authenticated for routing purposes
       return NextResponse.next({ request });
     }

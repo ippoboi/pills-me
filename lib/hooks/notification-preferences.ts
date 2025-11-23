@@ -53,8 +53,9 @@ export function useUpdateNotificationPreference() {
         | "refill_reminders_enabled"
         | "app_updates_enabled"
         | "system_notifications_enabled"
+        | "timezone"
       >;
-      value: boolean;
+      value: boolean | string;
     }) => {
       const result = await updateNotificationPreference(field, value);
       if (!result.success) {
@@ -121,6 +122,7 @@ export function useUpdateNotificationPreferences() {
           | "refill_reminders_enabled"
           | "app_updates_enabled"
           | "system_notifications_enabled"
+          | "timezone"
         >
       >
     ) => {
