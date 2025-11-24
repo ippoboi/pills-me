@@ -2,11 +2,10 @@ import type { TimeOfDay } from "@/lib/types";
 
 /**
  * Canonical local times for each TimeOfDay slot (in 24-hour format)
- * EXCEPTIONAL: LUNCH changed to 14:00
  */
 export const TIME_OF_DAY_HOURS: Record<TimeOfDay, number> = {
   MORNING: 8,
-  LUNCH: 14, // EXCEPTIONAL: Changed to 14:00
+  LUNCH: 12,
   DINNER: 18,
   BEFORE_SLEEP: 22,
 } as const;

@@ -147,12 +147,11 @@ export async function POST(request: NextRequest) {
       const count = items.length;
       const primary = items[0];
       const current = primary.inventory_total ?? 0;
-      const threshold = primary.low_inventory_threshold ?? 0;
 
       const body =
         count === 1
-          ? `You're running low on ${primary.name} (${current} left, threshold ${threshold}).`
-          : `You're running low on ${count} supplements. ${primary.name} is at ${current} left.`;
+          ? `You're running low on ${primary.name} (${current} left).`
+          : `You're running low on ${count} supplements.`;
 
       const payload: NotificationPayload = {
         title: "Time to refill your supplements",

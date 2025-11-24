@@ -230,18 +230,16 @@ export async function POST(request: NextRequest) {
           let body = "";
 
           if (supplements.length === 1) {
-            body = `Time to take your ${supplements[0].supplementName} (${timeOfDayLabel})`;
+            body = `Time to take your ${supplements[0].supplementName}`;
           } else {
-            body = `Time to take ${
-              supplements.length
-            } supplements: ${supplements
+            body = `Time to take: ${supplements
               .map((s) => s.supplementName)
-              .join(", ")} (${timeOfDayLabel})`;
+              .join(", ")} `;
           }
 
           const first = supplements[0];
           const payload: NotificationPayload = {
-            title: `Time for your ${timeOfDayLabel} supplements`,
+            title: `It's time for your ${timeOfDayLabel.toLowerCase()} supplements`,
             body,
             data: {
               timeOfDay,
@@ -561,18 +559,16 @@ export async function GET(request: NextRequest) {
           let body = "";
 
           if (supplements.length === 1) {
-            body = `Time to take your ${supplements[0].supplementName} (${timeOfDayLabel})`;
+            body = `Time to take your ${supplements[0].supplementName}`;
           } else {
-            body = `Time to take ${
-              supplements.length
-            } supplements: ${supplements
+            body = `Time to take: ${supplements
               .map((s) => s.supplementName)
-              .join(", ")} (${timeOfDayLabel})`;
+              .join(", ")}`;
           }
 
           const first = supplements[0];
           const payload: NotificationPayload = {
-            title: `Time for your ${timeOfDayLabel} supplements`,
+            title: `It's time for your ${timeOfDayLabel.toLowerCase()} supplements`,
             body,
             data: {
               timeOfDay,
