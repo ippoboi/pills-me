@@ -3,12 +3,14 @@ import { verifySessionToken } from "@/lib/session";
 import { NextResponse, type NextRequest } from "next/server";
 
 export async function proxy(request: NextRequest) {
-  // Skip Supabase session check for passkey and auth API routes
+  // Skip Supabase session check for passkey, auth, and push API routes
+  // Push routes are used by cron jobs and don't require user authentication
   if (
     request.nextUrl.pathname.startsWith("/api/passkey") ||
-    request.nextUrl.pathname.startsWith("/api/auth")
+    request.nextUrl.pathname.startsWith("/api/auth") ||
+    request.nextUrl.pathname.startsWith("/api/push")
   ) {
-    return;
+    return NextResponse.next();
   }
 
   // Accept app cookie session for gating protected routes
