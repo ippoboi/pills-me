@@ -22,11 +22,8 @@ self.addEventListener("push", function (event) {
         } else if (data.tag && data.tag.includes("app-update")) {
           // App update notification - redirect to todos
           redirectUrl = "/todos";
-        } else if (data.data?.supplementId) {
-          // Has supplement ID but no explicit URL - likely a refill notification
-          redirectUrl = `/supplements/${data.data.supplementId}`;
         } else {
-          // Default to todos for reminder notifications
+          // Default to todos for reminder notifications and all other types
           redirectUrl = "/todos";
         }
       }
@@ -105,9 +102,6 @@ self.addEventListener("notificationclick", function (event) {
     } else if (tag.includes("app-update")) {
       // App update notification - redirect to todos
       urlToOpen = "/todos";
-    } else if (supplementId) {
-      // Has supplement ID - likely a refill notification
-      urlToOpen = `/supplements/${supplementId}`;
     } else {
       // Default to todos for reminder notifications
       urlToOpen = "/todos";

@@ -216,10 +216,10 @@ export async function sendNotification(
     } else if (payload.tag && payload.tag.includes("app-update")) {
       // App update notification - redirect to todos
       defaultUrl = "/todos";
-    } else if (payload.data?.supplementId && !payload.url) {
-      // Has supplement ID but no explicit URL - likely a refill notification
-      defaultUrl = `/supplements/${payload.data.supplementId}`;
     }
+    // Note: Reminder notifications also include supplementId in data,
+    // but they should redirect to /todos, not the supplement detail page.
+    // Only refill notifications (tag includes "refill") should redirect to supplement pages.
 
     // Prepare notification payload
     const notificationPayload = JSON.stringify({
