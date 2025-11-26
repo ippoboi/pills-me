@@ -5,10 +5,15 @@ import { NextResponse, type NextRequest } from "next/server";
 export async function proxy(request: NextRequest) {
   // Skip Supabase session check for passkey, auth, and push API routes
   // Push routes are used by cron jobs and don't require user authentication
+  // Also skip for public pages like privacy policy, terms, and support
   if (
     request.nextUrl.pathname.startsWith("/api/passkey") ||
     request.nextUrl.pathname.startsWith("/api/auth") ||
-    request.nextUrl.pathname.startsWith("/api/push")
+    request.nextUrl.pathname.startsWith("/api/push") ||
+    request.nextUrl.pathname === "/privacy" ||
+    request.nextUrl.pathname === "/terms" ||
+    request.nextUrl.pathname === "/support" ||
+    request.nextUrl.pathname === "/onboarding"
   ) {
     return NextResponse.next();
   }

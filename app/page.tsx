@@ -681,15 +681,15 @@ function Footer() {
           </span>
         </div>
         <div className="flex gap-8 text-sm text-gray-500">
-          <a href="#" className="hover:text-gray-900">
+          <Link href="/privacy" className="hover:text-gray-900">
             Privacy Policy
-          </a>
-          <a href="#" className="hover:text-gray-900">
+          </Link>
+          <Link href="/terms" className="hover:text-gray-900">
             Terms of Service
-          </a>
-          <a href="#" className="hover:text-gray-900">
+          </Link>
+          <Link href="/support" className="hover:text-gray-900">
             Support
-          </a>
+          </Link>
         </div>
         <p className="text-sm text-gray-400">
           © 2024 Pillker. All rights reserved.
