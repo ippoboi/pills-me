@@ -159,7 +159,7 @@ export function BiomarkersVerificationModal({
 
   return (
     <BackdropPortal show={open} onClose={handleClose}>
-      <div className="bg-white rounded-3xl overflow-hidden md:min-w-[520px] max-h-[80vh] flex flex-col">
+      <div className="bg-white rounded-3xl overflow-hidden md:min-w-[620px] max-h-[80vh] flex flex-col">
         {isSaving ? (
           <div className="flex flex-col items-center justify-between gap-6 px-1 pt-1 pb-4 ">
             <div className="w-full p-10 space-y-2 bg-gradient-to-b from-gray-50 to-gray-100 rounded-2xl overflow-hidden border border-gray-200">

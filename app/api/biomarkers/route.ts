@@ -1,7 +1,16 @@
-import { NextRequest, NextResponse } from "next/server";
 import { authenticateRequest } from "@/lib/auth-helper";
+import type { Database, Tables } from "@/lib/supabase/database.types";
+import type {
+  BiomarkerItem,
+  BiomarkersByCategoryResponse,
+  BiomarkersByStatusResponse,
+  Category,
+  SortBy,
+  ThresholdBand,
+  Thresholds,
+} from "@/lib/types/biomarkers";
 import { enrichOcrResults } from "@/lib/utils/biomarker-matching";
-import type { Tables, Database } from "@/lib/supabase/database.types";
+import { NextRequest, NextResponse } from "next/server";
 
 type Report = Tables<"reports">;
 type ReportStatus = Database["public"]["Enums"]["report_status"];
@@ -20,6 +29,63 @@ interface SaveBiomarkersRequest {
 }
 
 const MATCH_CONFIDENCE_THRESHOLD = 0.65;
+
+// Helper function to determine status from value and thresholds
+// Threshold bands typically use: min (inclusive) <= value < max (exclusive)
+function getBiomarkerStatus(
+  value: number | null,
+  thresholds: Thresholds
+): "optimal" | "borderline" | "out_of_range" | null {
+  if (value === null || typeof value !== "number" || isNaN(value)) {
+    return null;
+  }
+
+  // Process bands in order - first match wins
+  for (const band of thresholds.bands) {
+    const min = band.min ?? Number.NEGATIVE_INFINITY;
+    const max = band.max ?? Number.POSITIVE_INFINITY;
+
+    // Check if value falls within this band
+    // Pattern: min (inclusive) <= value < max (exclusive)
+    if (band.min === null && band.max === null) {
+      // Both null - should not happen, but treat as match
+      return band.status;
+    } else if (band.min === null) {
+      // Open-ended on the left: value < max
+      if (value < max) {
+        return band.status;
+      }
+    } else if (band.max === null) {
+      // Open-ended on the right: value >= min
+      if (value >= min) {
+        return band.status;
+      }
+    } else {
+      // Both bounds defined: min <= value < max
+      if (value >= min && value < max) {
+        return band.status;
+      }
+    }
+  }
+
+  // If no band matches, return null (shouldn't happen with proper threshold setup)
+  return null;
+}
+
+type Sex = "male" | "female" | null;
+
+type RawThresholds = {
+  unit: string;
+  default: { bands: ThresholdBand[] };
+  male: { bands: ThresholdBand[] } | null;
+  female: { bands: ThresholdBand[] } | null;
+};
+
+function selectBandsForSex(raw: RawThresholds, sex: Sex): ThresholdBand[] {
+  if (sex === "male" && raw.male?.bands) return raw.male.bands;
+  if (sex === "female" && raw.female?.bands) return raw.female.bands;
+  return raw.default?.bands ?? [];
+}
 
 export async function POST(request: NextRequest) {
   let reportId: string | undefined;
@@ -258,6 +324,263 @@ export async function POST(request: NextRequest) {
     }
     return NextResponse.json(
       { error: "Internal server error while saving biomarkers" },
+      { status: 500 }
+    );
+  }
+}
+
+export async function GET(request: NextRequest) {
+  try {
+    const auth = await authenticateRequest(request);
+    if (!auth) {
+      return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
+    }
+
+    const { userId, supabase } = auth;
+
+    // Parse query parameters
+    const { searchParams } = new URL(request.url);
+    const sortByParam = searchParams.get("sortBy");
+    const sortBy: SortBy = sortByParam === "CATEGORY" ? "CATEGORY" : "STATUS"; // Default to STATUS
+
+    // Fetch user sex from user_information (if available) for sex-specific thresholds.
+    const { data: userInfo, error: userInfoError } = await supabase
+      .from("user_information")
+      .select("sex")
+      .eq("user_id", userId)
+      .maybeSingle();
+
+    if (userInfoError) {
+      console.error("Error fetching user_information:", userInfoError);
+    }
+
+    const userSex: Sex =
+      userInfo && (userInfo.sex === "male" || userInfo.sex === "female")
+        ? (userInfo.sex as Sex)
+        : null;
+
+    // Fetch user biomarkers joined with biomarker definitions and categories.
+    // - INNER JOIN via !inner ensures we only include biomarkers that exist in biomarkers_information
+    // - .not(\"value_numeric\", \"is\", null) filters out entries without a numeric value
+    const { data: joinedRows, error: joinedError } = await supabase
+      .from("user_biomarkers")
+      .select(
+        `
+        biomarker_id,
+        value_numeric,
+        value_text,
+        measured_at,
+        biomarker:biomarkers_information!inner (
+          id,
+          name,
+          unit,
+          thresholds,
+          category:biomarker_categories (
+            id,
+            label,
+            description,
+            icon,
+            sort_order
+          )
+        )
+      `
+      )
+      .eq("user_id", userId)
+      .not("value_numeric", "is", null)
+      .order("measured_at", { ascending: false, nullsFirst: false });
+
+    if (joinedError) {
+      console.error("Error fetching user biomarkers overview:", joinedError);
+      return NextResponse.json(
+        { error: "Failed to fetch biomarkers" },
+        { status: 500 }
+      );
+    }
+
+    if (!joinedRows || joinedRows.length === 0) {
+      return NextResponse.json({ biomarkers: [] }, { status: 200 });
+    }
+
+    // Deduplicate to the latest value per biomarker_id (rows are ordered by measured_at DESC)
+    const latestByBiomarker = new Map<string, (typeof joinedRows)[number]>();
+    for (const row of joinedRows) {
+      if (!latestByBiomarker.has(row.biomarker_id)) {
+        latestByBiomarker.set(row.biomarker_id, row);
+      }
+    }
+
+    // Build the biomarker items with full category objects
+    const biomarkerItems: BiomarkerItem[] = Array.from(
+      latestByBiomarker.values()
+    )
+      .map((row) => {
+        const biomarkerData = row.biomarker as unknown as {
+          id: string;
+          name: string;
+          unit: string;
+          thresholds: unknown;
+          category?:
+            | {
+                id: string;
+                label: string;
+                description: string | null;
+                icon: string | null;
+                sort_order: number;
+              }
+            | {
+                id: string;
+                label: string;
+                description: string | null;
+                icon: string | null;
+                sort_order: number;
+              }[]
+            | null;
+        } | null;
+
+        if (!biomarkerData) {
+          // Should not happen due to inner join, but guard anyway
+          return null as unknown as BiomarkerItem;
+        }
+
+        const rawThresholds =
+          biomarkerData.thresholds as unknown as RawThresholds;
+        const bands = selectBandsForSex(rawThresholds, userSex);
+        const thresholds: Thresholds = {
+          unit: rawThresholds.unit,
+          bands,
+        };
+
+        // Normalize category structure (Supabase may return single object or array)
+        const rawCategory = biomarkerData.category;
+        const categoryArray = Array.isArray(rawCategory)
+          ? rawCategory
+          : rawCategory
+          ? [rawCategory]
+          : [];
+        const categoryRow = categoryArray[0];
+
+        const category: Category = categoryRow
+          ? {
+              id: categoryRow.id,
+              label: categoryRow.label,
+              description: categoryRow.description,
+              icon: categoryRow.icon,
+              sort_order: categoryRow.sort_order,
+            }
+          : {
+              id: "unknown",
+              label: "Unknown",
+              description: null,
+              icon: null,
+              sort_order: 999,
+            };
+
+        const valueNumeric = row.value_numeric as number | null;
+        const status = getBiomarkerStatus(valueNumeric, thresholds);
+
+        return {
+          id: biomarkerData.id,
+          name: biomarkerData.name,
+          category,
+          status,
+          latestValue: valueNumeric,
+          unit: biomarkerData.unit,
+          thresholds,
+        };
+      })
+      .filter(Boolean) as BiomarkerItem[];
+
+    // Build response based on sortBy parameter
+    if (sortBy === "CATEGORY") {
+      // Group by category
+      const categoryGroups = new Map<
+        string,
+        { category: Category; biomarkers: BiomarkerItem[] }
+      >();
+
+      for (const item of biomarkerItems) {
+        const categoryId = item.category.id;
+        if (!categoryGroups.has(categoryId)) {
+          categoryGroups.set(categoryId, {
+            category: item.category,
+            biomarkers: [],
+          });
+        }
+        categoryGroups.get(categoryId)!.biomarkers.push(item);
+      }
+
+      // Sort biomarkers within each category by status priority, then by name
+      const statusPriority: Record<string, number> = {
+        out_of_range: 0,
+        borderline: 1,
+        optimal: 2,
+        null: 3,
+      };
+
+      const response: BiomarkersByCategoryResponse[] = Array.from(
+        categoryGroups.values()
+      )
+        .map((group) => {
+          // Sort biomarkers within category
+          group.biomarkers.sort((a, b) => {
+            const aPriority = statusPriority[a.status ?? "null"] ?? 3;
+            const bPriority = statusPriority[b.status ?? "null"] ?? 3;
+            if (aPriority !== bPriority) {
+              return aPriority - bPriority;
+            }
+            return a.name.localeCompare(b.name);
+          });
+          return group;
+        })
+        .sort((a, b) => a.category.sort_order - b.category.sort_order);
+
+      return NextResponse.json({ biomarkers: response }, { status: 200 });
+    } else {
+      // Group by status (default)
+      const statusGroups = new Map<
+        "optimal" | "borderline" | "out_of_range" | null,
+        BiomarkerItem[]
+      >();
+
+      for (const item of biomarkerItems) {
+        const status = item.status;
+        if (!statusGroups.has(status)) {
+          statusGroups.set(status, []);
+        }
+        statusGroups.get(status)!.push(item);
+      }
+
+      // Sort biomarkers within each status group by name
+      statusGroups.forEach((biomarkers) => {
+        biomarkers.sort((a, b) => a.name.localeCompare(b.name));
+      });
+
+      // Build response with status priority: out_of_range first, then borderline, then optimal, then null
+      const statusPriority: Record<string, number> = {
+        out_of_range: 0,
+        borderline: 1,
+        optimal: 2,
+        null: 3,
+      };
+
+      const response: BiomarkersByStatusResponse[] = Array.from(
+        statusGroups.entries()
+      )
+        .map(([status, biomarkers]) => ({ status, biomarkers }))
+        .sort((a, b) => {
+          const aStatusKey = a.status ?? "null";
+          const bStatusKey = b.status ?? "null";
+          const aPriority = statusPriority[aStatusKey] ?? 3;
+          const bPriority = statusPriority[bStatusKey] ?? 3;
+          return aPriority - bPriority;
+        });
+
+      return NextResponse.json({ biomarkers: response }, { status: 200 });
+    }
+  } catch (error) {
+    console.error("Error in GET /api/biomarkers route:", error);
+    return NextResponse.json(
+      { error: "Internal server error while fetching biomarkers" },
       { status: 500 }
     );
   }

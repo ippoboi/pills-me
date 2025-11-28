@@ -18,6 +18,7 @@ export interface CurrentUser {
   username: string | null;
   displayName: string | null;
   avatarUrl: string | null;
+  sex: Database["public"]["Enums"]["user_sex"] | null;
   notificationPreferences: NotificationPreferences | null;
   dayStreak: number | null;
   supplementsCount: number | null;

@@ -23,6 +23,7 @@ import {
 import { HugeiconsIcon } from "@hugeicons/react";
 import { Medicine02FreeIcons } from "@hugeicons/core-free-icons";
 import { useState } from "react";
+import { redirect } from "next/navigation";
 
 function Navbar() {
   const [isOpen, setIsOpen] = useState(false);
@@ -700,16 +701,15 @@ function Footer() {
 }
 
 export default function Home() {
-  return (
-    <main className="min-h-screen bg-white font-sans">
-      <Navbar />
-      <Hero />
-      <Benefits />
-      <HowItWorks />
-      <FeaturesGrid />
-      <FAQ />
-      <CTA />
-      <Footer />
-    </main>
-  );
+  return redirect("/auth");
+  // <main className="min-h-screen bg-white font-sans">
+  //   <Navbar />
+  //   <Hero />
+  //   <Benefits />
+  //   <HowItWorks />
+  //   <FeaturesGrid />
+  //   <FAQ />
+  //   <CTA />
+  //   <Footer />
+  // </main>
 }

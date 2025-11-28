@@ -1,15 +1,19 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { biomarkersKeys } from "../keys/keys";
-import { getBiomarkerReports } from "../queries/biomarkers";
+import {
+  getBiomarkerReports,
+  getBiomarkersOverview,
+} from "../queries/biomarkers";
 import {
   analyzeBiomarkerReport,
-  type AnalyzeBiomarkersVariables,
   saveBiomarkers,
 } from "../mutations/biomarkers";
 import type {
   BiomarkerReport,
   SaveBiomarkersRequestBody,
   SaveBiomarkersResponse,
+  BiomarkersApiResponse,
+  SortBy,
 } from "../types";
 
 export function useBiomarkerReports() {
@@ -21,19 +25,27 @@ export function useBiomarkerReports() {
   });
 }
 
+// Biomarkers overview (grouped by STATUS or CATEGORY)
+export function useBiomarkersOverview(sortBy: SortBy = "STATUS") {
+  return useQuery<BiomarkersApiResponse, Error>({
+    queryKey: biomarkersKeys.overview(sortBy),
+    queryFn: () => getBiomarkersOverview(sortBy),
+    staleTime: 5 * 60 * 1000,
+    refetchOnWindowFocus: true,
+  });
+}
+
 export function useAnalyzeBiomarkerReport() {
   const queryClient = useQueryClient();
 
-  return useMutation<BiomarkerReport | null, Error, AnalyzeBiomarkersVariables>(
-    {
-      mutationFn: analyzeBiomarkerReport,
-      onSuccess: async () => {
-        await queryClient.invalidateQueries({
-          queryKey: biomarkersKeys.reports(),
-        });
-      },
-    }
-  );
+  return useMutation({
+    mutationFn: analyzeBiomarkerReport,
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({
+        queryKey: biomarkersKeys.reports(),
+      });
+    },
+  });
 }
 
 interface SaveBiomarkersContext {
@@ -84,9 +96,15 @@ export function useSaveBiomarkers() {
       console.error("Failed to save biomarkers:", error);
     },
     onSettled: async () => {
-      await queryClient.invalidateQueries({
-        queryKey: biomarkersKeys.reports(),
-      });
+      await Promise.all([
+        queryClient.invalidateQueries({
+          queryKey: biomarkersKeys.reports(),
+        }),
+        // Invalidate any biomarker overview queries (STATUS / CATEGORY)
+        queryClient.invalidateQueries({
+          queryKey: biomarkersKeys.all(),
+        }),
+      ]);
     },
   });
 }

@@ -23,19 +23,41 @@ export function LabReportCard({
 }: LabReportCardProps) {
   const date = report.collected_at ?? report.created_at;
   const dt = date ? new Date(date) : null;
+
+  // Format date without timezone conversion (using UTC methods)
   const dateLabel = dt
-    ? dt.toLocaleDateString("en-US", {
-        month: "short",
-        day: "numeric",
-        year: "numeric",
-      })
+    ? (() => {
+        const months = [
+          "Jan",
+          "Feb",
+          "Mar",
+          "Apr",
+          "May",
+          "Jun",
+          "Jul",
+          "Aug",
+          "Sep",
+          "Oct",
+          "Nov",
+          "Dec",
+        ];
+        const month = months[dt.getUTCMonth()];
+        const day = dt.getUTCDate();
+        const year = dt.getUTCFullYear();
+        return `${month} ${day}, ${year}`;
+      })()
     : "-";
 
+  // Format time without timezone conversion (using UTC methods)
   const timeLabel = dt
-    ? dt.toLocaleTimeString(undefined, {
-        hour: "numeric",
-        minute: "2-digit",
-      })
+    ? (() => {
+        const hours = dt.getUTCHours();
+        const minutes = dt.getUTCMinutes();
+        const hour12 = hours % 12 || 12;
+        const ampm = hours >= 12 ? "PM" : "AM";
+        const minutesStr = minutes.toString().padStart(2, "0");
+        return `${hour12}:${minutesStr} ${ampm}`;
+      })()
     : "";
 
   const isVerifying = report.status === "VERIFYING";
@@ -49,13 +71,9 @@ export function LabReportCard({
 
   return (
     <li
-      className={cn(
-        "flex items-center p-3 bg-white border border-gray-200 rounded-3xl transition-colors",
-        {
-          "hover:bg-gray-50/50 cursor-pointer": isClickable,
-          "cursor-default": !isClickable,
-        }
-      )}
+      className={
+        "flex items-center p-3 bg-white border border-gray-200 rounded-3xl transition-colors hover:bg-gray-50/50 cursor-pointer"
+      }
       onClick={handleClick}
     >
       <div className="flex flex-col gap-6 flex-1">
@@ -66,7 +84,8 @@ export function LabReportCard({
                 report.status === "EXTRACTING" || report.status === "SAVING",
               "bg-blue-50 text-blue-600": report.status === "VERIFYING",
               "bg-gray-50 text-gray-500": report.status === "COMPLETED",
-              "bg-red-50 text-red-600": report.status === "CANCELED",
+              "bg-red-50 text-red-600":
+                report.status === "CANCELED" || report.status === "UNMATCHED",
             })}
           >
             {report.status === "EXTRACTING" || report.status === "SAVING" ? (

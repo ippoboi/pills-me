@@ -107,6 +107,7 @@ export type Database = {
         Row: {
           category_id: string
           created_at: string
+          description: string | null
           id: string
           name: string
           short_name: string
@@ -118,6 +119,7 @@ export type Database = {
         Insert: {
           category_id: string
           created_at?: string
+          description?: string | null
           id?: string
           name: string
           short_name: string
@@ -129,6 +131,7 @@ export type Database = {
         Update: {
           category_id?: string
           created_at?: string
+          description?: string | null
           id?: string
           name?: string
           short_name?: string
@@ -602,6 +605,30 @@ export type Database = {
           },
         ]
       }
+      user_information: {
+        Row: {
+          created_at: string
+          id: string
+          sex: Database["public"]["Enums"]["user_sex"]
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          sex: Database["public"]["Enums"]["user_sex"]
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          sex?: Database["public"]["Enums"]["user_sex"]
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       user_preferences: {
         Row: {
           created_at: string
@@ -657,6 +684,7 @@ export type Database = {
         | "ADDED_SYNONYM"
         | "MARKED_INVALID"
         | "CREATED_BIOMARKER"
+      user_sex: "male" | "female"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -805,6 +833,7 @@ export const Constants = {
         "MARKED_INVALID",
         "CREATED_BIOMARKER",
       ],
+      user_sex: ["male", "female"],
     },
   },
 } as const

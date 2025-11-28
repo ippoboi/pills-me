@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { verifySessionToken } from "@/lib/session";
+import type { Database } from "@/lib/supabase/database.types";
 
 export async function GET(request: Request) {
   try {
@@ -16,7 +17,7 @@ export async function GET(request: Request) {
     if (!payload?.uid) {
       return NextResponse.json({ error: "Invalid session" }, { status: 401 });
     }
-    const supabase = createClient(
+    const supabase = createClient<Database>(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
       process.env.SUPABASE_SERVICE_ROLE_KEY!
     );
@@ -104,6 +105,13 @@ export async function GET(request: Request) {
       }
     }
 
+    // Fetch user_information (sex enum) if present
+    const { data: userInfo, error: userInfoError } = await supabase
+      .from("user_information")
+      .select("sex")
+      .eq("user_id", data.user.id)
+      .maybeSingle();
+
     if (prefsError) {
       console.error("Error fetching notification preferences:", prefsError);
     }
@@ -113,12 +121,16 @@ export async function GET(request: Request) {
     if (dayStreakError) {
       console.error("Error fetching adherence records:", dayStreakError);
     }
+    if (userInfoError) {
+      console.error("Error fetching user_information:", userInfoError);
+    }
 
     return NextResponse.json({
       id: data.user.id,
       username: data.user.user_metadata?.username,
       displayName: data.user.user_metadata?.display_name,
       avatarUrl: null,
+      sex: userInfo?.sex ?? null,
       notificationPreferences: preferences,
       supplementsCount: supplementsCount || 0,
       dayStreak: dayStreak,
