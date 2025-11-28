@@ -3,18 +3,6 @@ import Groq from "groq-sdk";
 import fs from "fs";
 import path from "path";
 import os from "os";
-import { Canvas, DOMMatrix, ImageData, Path2D } from "@napi-rs/canvas";
-
-// Polyfill globals for pdfjs-dist
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-(globalThis as any).Canvas = (globalThis as any).Canvas || Canvas;
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-(globalThis as any).DOMMatrix = (globalThis as any).DOMMatrix || DOMMatrix;
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-(globalThis as any).ImageData = (globalThis as any).ImageData || ImageData;
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-(globalThis as any).Path2D = (globalThis as any).Path2D || Path2D;
-
 import type { Json, Database } from "@/lib/supabase/database.types";
 import { authenticateRequest } from "@/lib/auth-helper";
 
@@ -232,24 +220,8 @@ let pdfGetDocument: any;
 async function ensurePdfJsLoaded() {
   if (pdfInitialized) return;
 
-  const [{ getDocument, GlobalWorkerOptions }, pdfjsWorker] = await Promise.all(
-    [
-      import("pdfjs-dist/legacy/build/pdf.mjs"),
-      import("pdfjs-dist/legacy/build/pdf.worker.mjs"),
-    ]
-  );
-
-  const globalWithWorker = globalThis as typeof globalThis & {
-    pdfjsWorker?: unknown;
-  };
-
-  if (!globalWithWorker.pdfjsWorker) {
-    globalWithWorker.pdfjsWorker = pdfjsWorker;
-  }
-
-  if (!GlobalWorkerOptions.workerSrc) {
-    GlobalWorkerOptions.workerSrc = "pdfjs-dist/legacy/build/pdf.worker.mjs";
-  }
+  // Use pdfjs-serverless which is designed for Node.js/serverless environments
+  const { getDocument } = await import("pdfjs-serverless");
 
   pdfGetDocument = getDocument;
   pdfInitialized = true;
@@ -289,18 +261,15 @@ async function convertPdfToImages(pdfPath: string): Promise<string[]> {
       // Set scale for good quality (2.0 = 200% scale)
       const viewport = page.getViewport({ scale: 2.0 });
 
-      // Use pdf.js' own Node-aware canvas factory (works with its Image impl)
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const canvasFactory = (pdfDocument as any).canvasFactory;
-      const canvasAndContext = canvasFactory.create(
-        viewport.width,
-        viewport.height
-      );
+      // Use Node.js canvas directly (pdfjs-serverless is compatible)
+      const { createCanvas } = await import("canvas");
+      const canvas = createCanvas(viewport.width, viewport.height);
+      const context = canvas.getContext("2d");
 
       // Render page to canvas
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const renderContext: any = {
-        canvasContext: canvasAndContext.context,
+        canvasContext: context,
         viewport,
       };
 
@@ -308,7 +277,6 @@ async function convertPdfToImages(pdfPath: string): Promise<string[]> {
       await renderTask.promise;
 
       // Convert canvas to PNG buffer
-      const canvas = canvasAndContext.canvas;
       const imageBuffer = canvas.toBuffer("image/png");
 
       // Save to file
@@ -321,7 +289,6 @@ async function convertPdfToImages(pdfPath: string): Promise<string[]> {
 
       // Clean up page resources
       page.cleanup();
-      canvasFactory.destroy(canvasAndContext);
     }
 
     return imagePaths;
