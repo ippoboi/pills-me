@@ -7,8 +7,9 @@ export function ConditionalProgressiveBlur() {
   const pathname = usePathname();
   const isSupplementDetail = /^\/supplements\/[^/]+$/.test(pathname);
   const isProfilePage = /^\/profile$/.test(pathname);
+  const isBiomarkers = /^\/profile\/biomarkers$/.test(pathname);
 
-  return isSupplementDetail ? null : (
+  return isSupplementDetail || isBiomarkers ? null : (
     <>
       <ProgressiveBlur
         position="top"

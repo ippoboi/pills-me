@@ -10,7 +10,7 @@ import type { TodaySupplementsResponse } from "@/lib/types";
 import { useDateContext } from "@/lib/contexts/date-context";
 import InstallPrompt from "@/components/pwa/install-prompts";
 import { usePrefetchQuery } from "@tanstack/react-query";
-import { supplementsKeys } from "@/lib/queries/keys";
+import { supplementsKeys } from "@/lib/keys/keys";
 import { getTodaySupplements } from "@/lib/queries/supplements";
 import { useMemo } from "react";
 

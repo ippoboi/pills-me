@@ -11,7 +11,7 @@ import { getUserTimezone } from "@/lib/utils/timezone";
 import { cn } from "@/lib/utils";
 import { getAdherenceColorClass } from "@/lib/utils/supplements";
 
-import { supplementsKeys } from "@/lib/queries/keys";
+import { supplementsKeys } from "@/lib/keys/keys";
 
 interface SupplementCardProps {
   supplement: Supplement;
@@ -50,7 +50,7 @@ export default function SupplementCard({
   const handleToggle = async () => {
     // Prevent double-click/tap by checking if already toggling
     if (isToggling) return;
-    
+
     setIsToggling(true);
     // Optimistic update - update UI immediately
     const previousState = isTaken;
@@ -182,7 +182,7 @@ export default function SupplementCard({
   const handleCardKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
     // Prevent interaction when toggling
     if (isToggling) return;
-    
+
     if (
       event.key === "Enter" ||
       event.key === " " ||
@@ -207,7 +207,7 @@ export default function SupplementCard({
       onClick={(event) => {
         // Prevent interaction when toggling
         if (isToggling) return;
-        
+
         // Only prevent card click if clicking directly on checkbox or its wrapper
         const target = event.target as HTMLElement;
         const isCheckboxClick =
@@ -303,8 +303,8 @@ export default function SupplementCard({
             event.stopPropagation();
           }}
         >
-          <Checkbox 
-            checked={isTaken} 
+          <Checkbox
+            checked={isTaken}
             onCheckedChange={handleToggle}
             disabled={isToggling}
           />

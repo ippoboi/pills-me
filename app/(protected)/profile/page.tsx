@@ -23,8 +23,10 @@ import {
 import PushNotificationManager from "@/components/pwa/push-notification-manager";
 import { DeleteAccountButton } from "@/components/ui/delete-account-button";
 import DeleteAccountModal from "@/components/protected/delete-account-modal";
+import { useRouter } from "next/navigation";
 
 export default function ProfilePage() {
+  const router = useRouter();
   const { data: user, isLoading, error, isFetching } = useCurrentUser();
 
   const { data: preferences, isLoading: preferencesLoading } =
@@ -179,6 +181,19 @@ export default function ProfilePage() {
               <LogoutButton />
             </div>
           </div>
+        </div>
+
+        {/* Biomarkers section */}
+        <div className="flex w-full gap-4 items-center justify-between bg-white p-6 md:p-8 rounded-[32px] shadow-sm">
+          <h2 className="uppercase text-gray-500">Biomarkers</h2>
+          <Button
+            onClick={() => {
+              router.push("/profile/biomarkers");
+            }}
+            variant="secondary"
+          >
+            Manage
+          </Button>
         </div>
 
         {/* Stats section */}

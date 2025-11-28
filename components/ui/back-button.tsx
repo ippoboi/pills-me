@@ -15,7 +15,7 @@ export function BackButton({ title }: { title: string }) {
       <div className="flex items-center justify-center size-8 rounded-xl bg-gray-100 ">
         <HugeiconsIcon icon={ArrowLeft01FreeIcons} className="w-4 h-4" />
       </div>
-      <span>Back to {title.toLowerCase()}</span>
+      <span className="font-medium">Back to {title.toLowerCase()}</span>
     </motion.button>
   );
 }

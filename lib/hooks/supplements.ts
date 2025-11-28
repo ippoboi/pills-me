@@ -8,7 +8,7 @@ import {
 import { getSupplementById, getTodaySupplements } from "../queries/supplements";
 import { getSupplementsList } from "../queries/supplements";
 import { getUserTimezone } from "../utils/timezone";
-import { supplementsKeys } from "../queries/keys";
+import { supplementsKeys } from "../keys/keys";
 import type {
   CreateSupplementResponse,
   EditSupplementResponse,

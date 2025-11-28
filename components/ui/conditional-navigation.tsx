@@ -8,6 +8,9 @@ import { AddSupplementMobileButton } from "./add-supplement-mobile";
 export function ConditionalNavigation() {
   const pathname = usePathname();
   const isSupplementDetail = /^\/supplements\/[^/]+$/.test(pathname);
+  const isBiomarkers = /^\/profile\/biomarkers$/.test(pathname);
+
+  if (isBiomarkers) return null;
 
   return isSupplementDetail ? (
     <SupplementTools />

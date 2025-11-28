@@ -13,3 +13,9 @@ export const supplementsKeys = {
 export const userKeys = {
   current: ["user", "current"] as const,
 };
+
+export const biomarkersKeys = {
+  all: () => ["biomarkers"] as const,
+  reports: () => ["biomarkers", "reports"] as const,
+  reportById: (id: string) => ["biomarkers", "report", id] as const,
+} as const;
