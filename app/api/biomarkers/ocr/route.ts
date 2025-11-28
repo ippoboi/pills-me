@@ -3,6 +3,18 @@ import Groq from "groq-sdk";
 import fs from "fs";
 import path from "path";
 import os from "os";
+import { Canvas, DOMMatrix, ImageData, Path2D } from "@napi-rs/canvas";
+
+// Polyfill globals for pdfjs-dist
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+(globalThis as any).Canvas = (globalThis as any).Canvas || Canvas;
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+(globalThis as any).DOMMatrix = (globalThis as any).DOMMatrix || DOMMatrix;
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+(globalThis as any).ImageData = (globalThis as any).ImageData || ImageData;
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+(globalThis as any).Path2D = (globalThis as any).Path2D || Path2D;
+
 import type { Json, Database } from "@/lib/supabase/database.types";
 import { authenticateRequest } from "@/lib/auth-helper";
 
