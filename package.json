@@ -9,6 +9,7 @@
     "db-update": "npx supabase gen types typescript --project-id zqdcjkkxdekzhzgrshkf --schema public > lib/supabase/database.types.ts"
   },
   "dependencies": {
+    "@napi-rs/canvas": "^0.1.66",
     "@hugeicons/core-free-icons": "^1.2.1",
     "@hugeicons/react": "^1.1.1",
     "@radix-ui/react-avatar": "^1.1.11",
