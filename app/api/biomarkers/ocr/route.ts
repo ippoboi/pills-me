@@ -3,31 +3,10 @@ import Groq from "groq-sdk";
 import fs from "fs";
 import path from "path";
 import os from "os";
-import {
-  getDocument,
-  GlobalWorkerOptions,
-} from "pdfjs-dist/legacy/build/pdf.mjs";
-import * as pdfjsWorker from "pdfjs-dist/legacy/build/pdf.worker.mjs";
 import type { Json, Database } from "@/lib/supabase/database.types";
 import { authenticateRequest } from "@/lib/auth-helper";
 
 type ReportStatus = Database["public"]["Enums"]["report_status"];
-
-// Ensure pdfjs-dist can locate and use its worker in a Node/Next environment.
-// 1) Expose the worker module on globalThis so PDFWorker uses it directly
-//    (avoids dynamic import of a non-existent chunk).
-const globalWithWorker = globalThis as typeof globalThis & {
-  pdfjsWorker?: unknown;
-};
-
-if (!globalWithWorker.pdfjsWorker) {
-  globalWithWorker.pdfjsWorker = pdfjsWorker;
-}
-
-// 2) Keep a valid workerSrc for any internal lookups.
-if (!GlobalWorkerOptions.workerSrc) {
-  GlobalWorkerOptions.workerSrc = "pdfjs-dist/legacy/build/pdf.worker.mjs";
-}
 
 // ============================================================================
 // TYPES
@@ -230,10 +209,47 @@ function getGroqClient(): Groq {
 }
 
 // ============================================================================
+// PDF.JS DYNAMIC LOADING (to avoid module-load crashes in production)
+// ============================================================================
+
+let pdfInitialized = false;
+// pdfjs-dist types are complex; use unknown here and narrow at usage sites.
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+let pdfGetDocument: any;
+
+async function ensurePdfJsLoaded() {
+  if (pdfInitialized) return;
+
+  const [{ getDocument, GlobalWorkerOptions }, pdfjsWorker] = await Promise.all(
+    [
+      import("pdfjs-dist/legacy/build/pdf.mjs"),
+      import("pdfjs-dist/legacy/build/pdf.worker.mjs"),
+    ]
+  );
+
+  const globalWithWorker = globalThis as typeof globalThis & {
+    pdfjsWorker?: unknown;
+  };
+
+  if (!globalWithWorker.pdfjsWorker) {
+    globalWithWorker.pdfjsWorker = pdfjsWorker;
+  }
+
+  if (!GlobalWorkerOptions.workerSrc) {
+    GlobalWorkerOptions.workerSrc = "pdfjs-dist/legacy/build/pdf.worker.mjs";
+  }
+
+  pdfGetDocument = getDocument;
+  pdfInitialized = true;
+}
+
+// ============================================================================
 // PDF / IMAGE HELPERS
 // ============================================================================
 
 async function convertPdfToImages(pdfPath: string): Promise<string[]> {
+  await ensurePdfJsLoaded();
+
   if (!fs.existsSync(pdfPath)) {
     throw new Error(`PDF file not found: ${pdfPath}`);
   }
@@ -249,7 +265,7 @@ async function convertPdfToImages(pdfPath: string): Promise<string[]> {
     const data = new Uint8Array(fs.readFileSync(pdfPath));
 
     // Load the PDF document
-    const loadingTask = getDocument({ data });
+    const loadingTask = pdfGetDocument({ data });
     const pdfDocument = await loadingTask.promise;
     const numPages = pdfDocument.numPages;
     const imagePaths: string[] = [];
