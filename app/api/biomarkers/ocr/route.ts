@@ -209,94 +209,65 @@ function getGroqClient(): Groq {
 }
 
 // ============================================================================
-// PDF.JS DYNAMIC LOADING (to avoid module-load crashes in production)
+// PDF TEXT EXTRACTION (using pdfjs-serverless)
 // ============================================================================
 
-let pdfInitialized = false;
-// pdfjs-dist types are complex; use unknown here and narrow at usage sites.
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-let pdfGetDocument: any;
+async function extractTextFromPdf(pdfPath: string): Promise<string> {
+  if (!fs.existsSync(pdfPath)) {
+    throw new Error(`PDF file not found: ${pdfPath}`);
+  }
 
-async function ensurePdfJsLoaded() {
-  if (pdfInitialized) return;
+  try {
+    // Use pdfjs-serverless for direct text extraction
+    const { getDocument } = await import("pdfjs-serverless");
 
-  // Use pdfjs-serverless which is designed for Node.js/serverless environments
-  const { getDocument } = await import("pdfjs-serverless");
+    // Read PDF file
+    const data = new Uint8Array(fs.readFileSync(pdfPath));
 
-  pdfGetDocument = getDocument;
-  pdfInitialized = true;
+    // Load the PDF document
+    const loadingTask = getDocument({ data });
+    const pdfDocument = await loadingTask.promise;
+    const numPages = pdfDocument.numPages;
+
+    let fullText = "";
+
+    // Extract text from each page
+    for (let pageNum = 1; pageNum <= numPages; pageNum++) {
+      const page = await pdfDocument.getPage(pageNum);
+      const textContent = await page.getTextContent();
+
+      // Combine text items into a single string
+      const pageText = textContent.items
+        .map((item) => (item as { str: string }).str)
+        .join(" ");
+
+      fullText += pageText + "\n\n";
+    }
+
+    return fullText.trim();
+  } catch (error) {
+    console.error("Error extracting text from PDF:", error);
+    throw error;
+  }
 }
 
 // ============================================================================
 // PDF / IMAGE HELPERS
 // ============================================================================
 
-async function convertPdfToImages(pdfPath: string): Promise<string[]> {
-  await ensurePdfJsLoaded();
+// Simplified: Process text directly from PDF or handle images
+async function processDocument(filePath: string): Promise<ExtractedReport> {
+  const isPdf = isFilePdf(filePath);
 
-  if (!fs.existsSync(pdfPath)) {
-    throw new Error(`PDF file not found: ${pdfPath}`);
-  }
+  if (isPdf) {
+    // Extract text directly from PDF
+    const extractedText = await extractTextFromPdf(filePath);
 
-  const outputDir = path.join(path.dirname(pdfPath), `pdf_pages_${Date.now()}`);
-
-  if (!fs.existsSync(outputDir)) {
-    fs.mkdirSync(outputDir, { recursive: true });
-  }
-
-  try {
-    // Read PDF file
-    const data = new Uint8Array(fs.readFileSync(pdfPath));
-
-    // Load the PDF document
-    const loadingTask = pdfGetDocument({ data });
-    const pdfDocument = await loadingTask.promise;
-    const numPages = pdfDocument.numPages;
-    const imagePaths: string[] = [];
-
-    // Convert each page to PNG
-    for (let pageNum = 1; pageNum <= numPages; pageNum++) {
-      const page = await pdfDocument.getPage(pageNum);
-
-      // Set scale for good quality (2.0 = 200% scale)
-      const viewport = page.getViewport({ scale: 2.0 });
-
-      // Use Node.js canvas directly (pdfjs-serverless is compatible)
-      const { createCanvas } = await import("canvas");
-      const canvas = createCanvas(viewport.width, viewport.height);
-      const context = canvas.getContext("2d");
-
-      // Render page to canvas
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const renderContext: any = {
-        canvasContext: context,
-        viewport,
-      };
-
-      const renderTask = page.render(renderContext);
-      await renderTask.promise;
-
-      // Convert canvas to PNG buffer
-      const imageBuffer = canvas.toBuffer("image/png");
-
-      // Save to file
-      const imagePath = path.join(
-        outputDir,
-        `page_${pageNum.toString().padStart(3, "0")}.png`
-      );
-      fs.writeFileSync(imagePath, imageBuffer);
-      imagePaths.push(imagePath);
-
-      // Clean up page resources
-      page.cleanup();
-    }
-
-    return imagePaths;
-  } catch (error) {
-    if (fs.existsSync(outputDir)) {
-      fs.rmSync(outputDir, { recursive: true });
-    }
-    throw error;
+    // Process the extracted text with our AI agent
+    return await processExtractedText(extractedText);
+  } else {
+    // Handle image files (existing image processing)
+    return await processImageFile(filePath);
   }
 }
 
@@ -323,23 +294,47 @@ async function imageToBase64DataUrl(imagePath: string): Promise<string> {
 }
 
 // ============================================================================
-// GROQ OCR
+// GROQ PROCESSING (TEXT & IMAGE)
 // ============================================================================
 
-function chunkArray<T>(arr: T[], size: number): T[][] {
-  const chunks: T[][] = [];
-  for (let i = 0; i < arr.length; i += size) {
-    chunks.push(arr.slice(i, i + size));
+async function processExtractedText(
+  extractedText: string
+): Promise<ExtractedReport> {
+  const textPrompt = `${OCR_PROMPT}
+
+NOTE: The text below has been extracted from a PDF lab report. Process this text and extract the biomarker data according to the schema.
+
+TEXT CONTENT:
+${extractedText}`;
+
+  const groq = getGroqClient();
+  const response = await groq.chat.completions.create({
+    model: "meta-llama/llama-4-scout-17b-16e-instruct",
+    response_format: { type: "json_object" },
+    temperature: 0,
+    messages: [
+      {
+        role: "user",
+        content: textPrompt,
+      },
+    ],
+  });
+
+  const raw = response.choices[0]?.message?.content;
+  if (!raw) {
+    throw new Error("No response content from Groq");
   }
-  return chunks;
+
+  const parsed: OCRResponse = JSON.parse(raw);
+  return {
+    patient_info: parsed.patient_info,
+    lab_info: parsed.lab_info,
+    all_results: parsed.results,
+  };
 }
 
-async function extractFromImages(
-  imageDataUrls: string[]
-): Promise<OCRResponse> {
-  const multiImagePrompt = `${OCR_PROMPT}
-
-NOTE: You may receive multiple images corresponding to different pages of the same lab report. Consider ALL provided images together and return a SINGLE JSON object for the entire report, following the exact schema.`;
+async function processImageFile(imagePath: string): Promise<ExtractedReport> {
+  const imageDataUrl = await imageToBase64DataUrl(imagePath);
 
   const content: Array<
     | { type: "text"; text: string }
@@ -347,12 +342,12 @@ NOTE: You may receive multiple images corresponding to different pages of the sa
   > = [
     {
       type: "text",
-      text: multiImagePrompt,
+      text: OCR_PROMPT,
     },
-    ...imageDataUrls.map((url) => ({
-      type: "image_url" as const,
-      image_url: { url },
-    })),
+    {
+      type: "image_url",
+      image_url: { url: imageDataUrl },
+    },
   ];
 
   const groq = getGroqClient();
@@ -374,116 +369,16 @@ NOTE: You may receive multiple images corresponding to different pages of the sa
   }
 
   const parsed: OCRResponse = JSON.parse(raw);
-  return parsed;
-}
-
-async function processImageBatch(
-  imagePaths: string[]
-): Promise<ExtractedReport> {
-  const allResults: BiomarkerResult[] = [];
-
-  const patientInfo: PatientInfo = {
-    patient_name: null,
-    collected_at_local: null,
-  };
-
-  const labInfo: LabInfo = {
-    lab_name: null,
-    lab_address: null,
-    country: null,
-    timezone_id: null,
-  };
-
-  const batches = chunkArray(imagePaths, 5);
-
-  for (let batchIndex = 0; batchIndex < batches.length; batchIndex++) {
-    const batch = batches[batchIndex];
-
-    try {
-      const imageDataUrls = await Promise.all(
-        batch.map((imagePath) => imageToBase64DataUrl(imagePath))
-      );
-
-      const response = await extractFromImages(imageDataUrls);
-
-      if (!patientInfo.patient_name && response.patient_info.patient_name) {
-        patientInfo.patient_name = response.patient_info.patient_name;
-      }
-      if (
-        !patientInfo.collected_at_local &&
-        response.patient_info.collected_at_local
-      ) {
-        patientInfo.collected_at_local =
-          response.patient_info.collected_at_local;
-      }
-
-      if (!labInfo.lab_name && response.lab_info.lab_name) {
-        labInfo.lab_name = response.lab_info.lab_name;
-      }
-      if (!labInfo.lab_address && response.lab_info.lab_address) {
-        labInfo.lab_address = response.lab_info.lab_address;
-      }
-      if (!labInfo.country && response.lab_info.country) {
-        labInfo.country = response.lab_info.country;
-      }
-      if (!labInfo.timezone_id && response.lab_info.timezone_id) {
-        labInfo.timezone_id = response.lab_info.timezone_id;
-      }
-
-      allResults.push(...response.results);
-    } catch (error) {
-      console.error("Failed to process image batch", batch, error);
-    }
-
-    if (batchIndex < batches.length - 1) {
-      await new Promise((resolve) => setTimeout(resolve, 500));
-    }
-  }
-
   return {
-    patient_info: patientInfo,
-    lab_info: labInfo,
-    all_results: allResults,
+    patient_info: parsed.patient_info,
+    lab_info: parsed.lab_info,
+    all_results: parsed.results,
   };
 }
 
-function cleanupImageDirectory(imagePaths: string[]): void {
-  if (imagePaths.length === 0) return;
-
-  try {
-    const outputDir = path.dirname(imagePaths[0]);
-    if (outputDir.includes("pdf_pages_")) {
-      fs.rmSync(outputDir, { recursive: true });
-    }
-  } catch (error) {
-    console.warn("Could not clean up temporary directory:", error);
-  }
-}
-
+// Main processing function - much simpler now!
 async function processLabReport(filePath: string): Promise<ExtractedReport> {
-  const isPdf = isFilePdf(filePath);
-  let imagePaths: string[] = [];
-
-  try {
-    if (isPdf) {
-      imagePaths = await convertPdfToImages(filePath);
-    } else {
-      imagePaths = [filePath];
-    }
-
-    const result = await processImageBatch(imagePaths);
-
-    if (isPdf) {
-      cleanupImageDirectory(imagePaths);
-    }
-
-    return result;
-  } catch (error) {
-    if (imagePaths.length > 0 && isPdf) {
-      cleanupImageDirectory(imagePaths);
-    }
-    throw error;
-  }
+  return await processDocument(filePath);
 }
 
 // ============================================================================
