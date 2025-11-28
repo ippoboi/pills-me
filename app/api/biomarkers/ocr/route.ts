@@ -213,12 +213,21 @@ RETURN ONLY VALID JSON
 Now extract from the provided lab report image.`;
 
 // ============================================================================
-// GROQ CLIENT
+// ROUTE CONFIG / GROQ CLIENT
 // ============================================================================
+// Force Node.js runtime since this route relies on fs/path/os/pdfjs.
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
 
-const groq = new Groq({
-  apiKey: process.env.GROQ_API_KEY,
-});
+function getGroqClient(): Groq {
+  const apiKey = process.env.GROQ_API_KEY;
+  if (!apiKey) {
+    throw new Error(
+      "GROQ_API_KEY environment variable is not set in the server environment"
+    );
+  }
+  return new Groq({ apiKey });
+}
 
 // ============================================================================
 // PDF / IMAGE HELPERS
@@ -351,6 +360,7 @@ NOTE: You may receive multiple images corresponding to different pages of the sa
     })),
   ];
 
+  const groq = getGroqClient();
   const response = await groq.chat.completions.create({
     model: "meta-llama/llama-4-scout-17b-16e-instruct",
     response_format: { type: "json_object" },
