@@ -145,55 +145,35 @@ export function calculateThresholdVisualization(
   const bands = thresholds.bands;
   const bidirectional = isBidirectional(thresholds);
 
-  // Base widths (desktop)
-  const currentStatusWidth = 16;
-  const otherStatusWidthOneDirection = 8;
-  const otherStatusWidthBidirectional = 4;
-
-  // Mobile: divide by 2
-  const currentWidth = isMobile ? currentStatusWidth / 2 : currentStatusWidth;
-  const otherWidth = isMobile
-    ? (bidirectional
-        ? otherStatusWidthBidirectional
-        : otherStatusWidthOneDirection) / 2
-    : bidirectional
-    ? otherStatusWidthBidirectional
-    : otherStatusWidthOneDirection;
-
-  // Build segments by iterating through bands in order
-  // Each band becomes a segment, but we need to handle bidirectional out_of_range specially
-  const segments: ThresholdSegment[] = [];
-
-  for (let i = 0; i < bands.length; i++) {
-    const band = bands[i];
-    const isCurrentStatus = currentStatus === band.status;
-
-    // For bidirectional out_of_range, check if this is the first or last occurrence
-    let segmentWidth: number;
-    if (bidirectional && band.status === "out_of_range") {
-      // Determine if this specific out_of_range segment is the current status
-      // For bidirectional, we need to check if the value falls in this specific band
-      let isThisBandCurrent = false;
-      if (latestValue !== null && currentStatus === "out_of_range") {
-        const valueBandResult = findBandForValue(latestValue, bands);
-        if (valueBandResult && valueBandResult.index === i) {
-          isThisBandCurrent = true;
-        }
-      }
-
-      segmentWidth = isThisBandCurrent ? currentWidth : otherWidth;
-    } else {
-      // Regular segment
-      segmentWidth = isCurrentStatus ? currentWidth : otherWidth;
+  // Find which band contains the current value
+  let currentBandIndex: number | null = null;
+  if (latestValue !== null && typeof latestValue === "number") {
+    const valueBandResult = findBandForValue(latestValue, bands);
+    if (valueBandResult) {
+      currentBandIndex = valueBandResult.index;
     }
-
-    segments.push({
-      status: band.status,
-      width: segmentWidth,
-      ...getStatusColors(band.status),
-      bandIndex: i,
-    });
   }
+
+  // Width rules:
+  // Normal (or bidirectional with 3 bands): current = 16 (desktop) / 8 (mobile), others = 8 (desktop) / 4 (mobile)
+  // Bidirectional with 5 bands: current = 16 (desktop) / 8 (mobile), others = 4 (desktop) / 2 (mobile)
+  const currentWidth = isMobile ? 8 : 16;
+  const otherWidthNormal = isMobile ? 4 : 8;
+  const otherWidthBidirectional = isMobile ? 2 : 4;
+
+  // Only use smaller bidirectional widths if bidirectional AND has 5 bands
+  const isBidirectional5Bands = bidirectional && bands.length === 5;
+  const otherWidth = isBidirectional5Bands
+    ? otherWidthBidirectional
+    : otherWidthNormal;
+
+  // Build segments - current band gets currentWidth, all others get otherWidth
+  const segments: ThresholdSegment[] = bands.map((band, i) => ({
+    status: band.status,
+    width: i === currentBandIndex ? currentWidth : otherWidth,
+    ...getStatusColors(band.status),
+    bandIndex: i,
+  }));
 
   // Calculate dot position
   let dotPosition: number | null = null;

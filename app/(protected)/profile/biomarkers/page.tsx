@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { ChevronRight, Plus } from "lucide-react";
 import Image from "next/image";
 import { useMemo, useState } from "react";
-import { LabReportCard } from "./lab-report-card";
+
 import { useBiomarkerReports, useBiomarkersOverview } from "@/lib/hooks";
 import type { BiomarkersByStatusResponse } from "@/lib/types/biomarkers";
 import {
@@ -27,6 +27,7 @@ import {
   Leaf01FreeIcons,
   DigestionFreeIcons,
 } from "@hugeicons/core-free-icons";
+import { LabReportCard } from "@/components/protected/biomarkers/lab-report-card";
 
 // Map database icon name strings to actual icon components
 // Database stores icon names like "BloodFreelcons", "AidsFreelcons", etc.
@@ -92,11 +93,13 @@ interface ThresholdBarProps {
 }
 
 // Map width numbers to Tailwind classes
+// Desktop calculations return: 16 (current), 8 (others normal), 4 (others bidirectional)
+// Mobile calculations return: 8 (current), 4 (others normal), 2 (others bidirectional)
 const widthClassMap: Record<number, { desktop: string; mobile: string }> = {
   2: { desktop: "md:w-4", mobile: "w-2" },
-  4: { desktop: "md:w-8", mobile: "w-4" },
-  8: { desktop: "md:w-16", mobile: "w-8" },
-  16: { desktop: "md:w-32", mobile: "w-16" },
+  4: { desktop: "md:w-4", mobile: "w-4" },
+  8: { desktop: "md:w-8", mobile: "w-8" },
+  16: { desktop: "md:w-16", mobile: "w-16" },
 };
 
 function ThresholdBar({
@@ -141,8 +144,8 @@ function ThresholdBar({
         {desktopConfig.segments.map(
           (segment: ThresholdSegment, index: number) => {
             const widthClasses = widthClassMap[segment.width] || {
-              desktop: "md:w-8",
-              mobile: "w-4",
+              desktop: "md:w-16",
+              mobile: "w-8",
             };
             return (
               <div
@@ -172,8 +175,8 @@ function ThresholdBar({
         {mobileConfig.segments.map(
           (segment: ThresholdSegment, index: number) => {
             const widthClasses = widthClassMap[segment.width] || {
-              desktop: "md:w-8",
-              mobile: "w-4",
+              desktop: "md:w-16",
+              mobile: "w-8",
             };
             return (
               <div
@@ -238,7 +241,7 @@ export default function Biomarkers() {
         }}
       />
       <div className="flex flex-col items-center gap-4 min-h-screen p-4 py-12 md:p-12 bg-white">
-        <div className="flex flex-col gap-8 md:max-w-5xl w-full">
+        <div className="flex flex-col gap-8 md:max-w-7xl w-full">
           <div className="flex justify-between items-center mb-4">
             <BackButton title="profile" />
             <Button onClick={() => setOpen(true)}>
@@ -285,8 +288,8 @@ export default function Biomarkers() {
               </div>
             </div>
           ) : (
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
-              <section className="lg:col-span-2 space-y-3">
+            <div className="grid grid-cols-1 lg:grid-cols-4 gap-10">
+              <section className="lg:col-span-3 space-y-3">
                 <span className="font-medium text-lg">Your biomarkers</span>
                 {isLoadingOverview ? (
                   <div className="flex flex-col items-center justify-center gap-4 h-[calc(100vh-20rem)]">
@@ -382,11 +385,12 @@ export default function Biomarkers() {
                             {statusGroup.biomarkers.map((biomarker) => (
                               <div
                                 key={biomarker.id}
-                                className="flex items-center justify-between p-4 bg-white border border-gray-200 rounded-3xl hover:bg-gray-50/50 transition-colors"
+                                className="grid grid-cols-[1fr_120px_200px_80px_auto] items-center gap-4 p-4 bg-white border border-gray-200 rounded-3xl hover:bg-gray-50/50 transition-colors"
                               >
-                                <div className="flex items-center gap-3 flex-1">
+                                {/* Biomarker name/category - flex-1 */}
+                                <div className="flex items-center gap-3 min-w-0">
                                   <div
-                                    className={`rounded-xl p-3 flex items-center justify-center ${config.bgColor} ${config.color}`}
+                                    className={`rounded-xl p-3 flex items-center justify-center flex-shrink-0 ${config.bgColor} ${config.color}`}
                                   >
                                     <HugeiconsIcon
                                       icon={getCategoryIcon(
@@ -396,37 +400,47 @@ export default function Biomarkers() {
                                       strokeWidth={2}
                                     />
                                   </div>
-                                  <div className="flex flex-col flex-1">
-                                    <span className="font-medium">
+                                  <div className="flex flex-col min-w-0">
+                                    <span className="font-medium truncate">
                                       {biomarker.name}
                                     </span>
-                                    <span className="text-sm text-gray-500">
+                                    <span className="text-sm text-gray-500 truncate">
                                       {biomarker.category.label}
                                     </span>
                                   </div>
                                 </div>
-                                <div className="flex items-center gap-3">
+
+                                {/* Status badge - equal width */}
+                                <div className="flex justify-center">
                                   <div
-                                    className={`px-2 py-1 rounded-lg text-xs font-medium ${config.bgColor} ${config.color} border ${config.borderColor}`}
+                                    className={`px-3 py-1 rounded-xl font-medium whitespace-nowrap ${config.bgColor} ${config.color}`}
                                   >
                                     {config.label}
                                   </div>
-                                  <div className="px-3">
-                                    <ThresholdBar
-                                      thresholds={biomarker.thresholds}
-                                      currentStatus={biomarker.status}
-                                      latestValue={biomarker.latestValue}
-                                    />
-                                  </div>
-                                  <div className="text-right">
-                                    <span className="text-sm font-medium">
-                                      {biomarker.latestValue?.toLocaleString() ??
-                                        "—"}
-                                    </span>
-                                    <span className="text-xs text-gray-500 ml-1">
-                                      {biomarker.unit}
-                                    </span>
-                                  </div>
+                                </div>
+
+                                {/* Threshold bar - equal width */}
+                                <div className="flex justify-center">
+                                  <ThresholdBar
+                                    thresholds={biomarker.thresholds}
+                                    currentStatus={biomarker.status}
+                                    latestValue={biomarker.latestValue}
+                                  />
+                                </div>
+
+                                {/* Value/unit - equal width */}
+                                <div className="text-right whitespace-nowrap">
+                                  <span className="text-sm font-medium">
+                                    {biomarker.latestValue?.toLocaleString() ??
+                                      "—"}
+                                  </span>
+                                  <span className="text-xs text-gray-500 ml-1">
+                                    {biomarker.unit}
+                                  </span>
+                                </div>
+
+                                {/* Chevron icon - auto width */}
+                                <div className="flex justify-center">
                                   <ChevronRight className="w-4 h-4 text-gray-400" />
                                 </div>
                               </div>
