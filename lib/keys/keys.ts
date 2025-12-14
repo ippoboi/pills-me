@@ -2,7 +2,6 @@
  * Query Keys for React Query
  * Centralized query key management for consistent caching
  */
-import type { SortBy } from "../types/biomarkers";
 
 export const supplementsKeys = {
   all: () => ["supplements"] as const,
@@ -14,11 +13,3 @@ export const supplementsKeys = {
 export const userKeys = {
   current: ["user", "current"] as const,
 };
-
-export const biomarkersKeys = {
-  all: () => ["biomarkers"] as const,
-  reports: () => ["biomarkers", "reports"] as const,
-  reportById: (id: string) => ["biomarkers", "report", id] as const,
-  overview: (sortBy: SortBy = "STATUS") =>
-    ["biomarkers", "overview", sortBy] as const,
-} as const;
