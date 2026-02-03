@@ -170,7 +170,7 @@ export default function OnboardingPage() {
                 hasName
                   ? "opacity-100"
                   : "opacity-0 pointer-events-none cursor-not-allowed"
-              } w-full px-8 h-12 rounded-xl flex items-center justify-center backdrop-blur-sm border border-white/30 text-white font-medium hover:bg-white/5 hover:border-white/40 transition-all duration-300 ease-out disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-white/10`}
+              } w-full px-8 h-12 rounded-xl flex items-center justify-center backdrop-blur-sm border border-white/30 text-white font-medium hover:bg-white/5 hover:border-white/40 transition-[background-color,border-color,opacity] duration-300 ease-out disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-white/10`}
             >
               {isLoading ? (
                 <Loader2 className="w-5 h-5 animate-spin" />

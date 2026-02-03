@@ -22,7 +22,7 @@ export function Badge({
           className="block w-5 h-5 flex-shrink-0"
         />
       ) : null}
-      <span className="px-1 leading-none translate-y-[1px]">{label}</span>
+      <span className="tabular-nums px-1 leading-none translate-y-[1px]">{label}</span>
     </div>
   );
 }

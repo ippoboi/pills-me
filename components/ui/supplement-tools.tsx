@@ -29,7 +29,8 @@ export function SupplementTools() {
           <div className="flex items-center gap-1">
             <button
               onClick={handleDeleteClick}
-              className="cursor-pointer gap-1 transition-all bg-white hover:bg-red-50 h-12 w-12 rounded-2xl text-gray-600 hover:text-red-600 flex items-center justify-center"
+              className="cursor-pointer gap-1 transition-colors bg-white hover:bg-red-50 h-12 w-12 rounded-2xl text-gray-600 hover:text-red-600 flex items-center justify-center"
+              aria-label="Delete supplement"
             >
               <HugeiconsIcon
                 strokeWidth={2}
@@ -41,7 +42,7 @@ export function SupplementTools() {
               // onClick={() =>
               //   currentSupplement && handleEdit(currentSupplement.supplement.id)
               // }
-              className="cursor-pointer gap-1 transition-all bg-white hover:bg-white/80 px-3 h-12 text-gray-600 rounded-2xl flex items-center"
+              className="cursor-pointer gap-1 transition-colors bg-white hover:bg-white/80 px-3 h-12 text-gray-600 rounded-2xl flex items-center"
             >
               <HugeiconsIcon
                 strokeWidth={2}
@@ -57,7 +58,7 @@ export function SupplementTools() {
                   //   currentSupplement &&
                   //   handleNewCycle(currentSupplement.supplement.id)
                   // }
-                  className="cursor-pointer gap-1 transition-all bg-white hover:bg-white/80 px-3 h-12 text-blue-600 rounded-2xl flex items-center"
+                  className="cursor-pointer gap-1 transition-colors bg-white hover:bg-white/80 px-3 h-12 text-blue-600 rounded-2xl flex items-center"
                 >
                   <HugeiconsIcon
                     strokeWidth={2}
@@ -75,7 +76,7 @@ export function SupplementTools() {
                   // TODO IMPLEMENT REFILL AMOUNT MODAL
                   handleRefill(currentSupplement.supplement.id, 10)
                 }
-                className="cursor-pointer gap-1 transition-all bg-white hover:bg-white/80 px-3 h-12 text-blue-600 rounded-2xl flex items-center"
+                className="cursor-pointer gap-1 transition-colors bg-white hover:bg-white/80 px-3 h-12 text-blue-600 rounded-2xl flex items-center"
               >
                 <HugeiconsIcon
                   strokeWidth={2}

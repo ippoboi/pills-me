@@ -11,6 +11,7 @@ export function BackButton({ title }: { title: string }) {
       whileTap={{ scale: 0.98 }}
       onClick={() => router.back()}
       className="flex items-center gap-2 text-gray-600"
+      aria-label="Go back"
     >
       <div className="flex items-center justify-center size-8 rounded-xl bg-gray-100 ">
         <HugeiconsIcon icon={ArrowLeft01FreeIcons} className="w-4 h-4" />

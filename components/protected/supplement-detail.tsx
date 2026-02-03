@@ -184,7 +184,7 @@ export default function SupplementDetail({
                 <span className="text-gray-500 uppercase text-sm">
                   Capsules per take
                 </span>
-                <span>{supplement.capsules_per_take}</span>
+                <span className="tabular-nums">{supplement.capsules_per_take}</span>
               </div>
               {supplement.end_date ||
               !supplement.inventory_total ||
@@ -194,12 +194,12 @@ export default function SupplementDetail({
                     Inventory
                   </span>
                   <span
-                    className={
+                    className={`tabular-nums ${
                       supplement.inventory_total <
                       supplement.low_inventory_threshold
                         ? "text-red-500"
                         : "text-gray-900"
-                    }
+                    }`}
                   >
                     {supplement.inventory_total}
                   </span>

@@ -89,6 +89,7 @@ function Navbar() {
             <button
               onClick={() => setIsOpen(!isOpen)}
               className="p-2 text-gray-600"
+              aria-label={isOpen ? "Close menu" : "Open menu"}
             >
               {isOpen ? <X size={24} /> : <Menu size={24} />}
             </button>
@@ -160,7 +161,7 @@ function Hero() {
 
         <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-12">
           <Link href="/login">
-            <Button className="rounded-full px-8 h-12 text-base bg-blue-600 hover:bg-blue-700 text-white shadow-xl hover:shadow-2xl transition-all duration-300">
+            <Button className="rounded-full px-8 h-12 text-base bg-blue-600 hover:bg-blue-700 text-white shadow-xl hover:shadow-2xl transition-[background-color,box-shadow] duration-300">
               Start Tracking for Free
             </Button>
           </Link>
@@ -264,7 +265,7 @@ function Benefits() {
           {benefits.map((benefit, index) => (
             <div
               key={index}
-              className="group p-8 rounded-3xl border border-gray-100 bg-white hover:border-gray-200 hover:shadow-lg transition-all duration-300"
+              className="group p-8 rounded-3xl border border-gray-100 bg-white hover:border-gray-200 hover:shadow-lg transition-[border-color,box-shadow] duration-300"
             >
               <div
                 className={`w-14 h-14 ${benefit.bg} rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-300`}
@@ -617,7 +618,7 @@ function FAQ() {
                 )}
               </button>
               <div
-                className={`grid transition-all duration-300 ease-in-out ${
+                className={`grid transition-[grid-template-rows,opacity] duration-300 ease-in-out ${
                   openIndex === i
                     ? "grid-rows-[1fr] opacity-100"
                     : "grid-rows-[0fr] opacity-0"

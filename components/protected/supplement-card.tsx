@@ -254,7 +254,7 @@ export default function SupplementCard({
             </div>
 
             {/* Quantity Badge */}
-            <span className="px-1.5 bg-blue-600 justify-self-end md:justify-self-center text-white font-medium rounded-lg text-sm md:text-base">
+            <span className="tabular-nums px-1.5 bg-blue-600 justify-self-end md:justify-self-center text-white font-medium rounded-lg text-sm md:text-base">
               x{supplement.capsules_per_take}
             </span>
 
@@ -272,11 +272,11 @@ export default function SupplementCard({
                 Adherence
               </span>
               <span
-                className={
+                className={`tabular-nums ${
                   getAdherenceColorClass(
                     supplement.adherence_progress.percentage
                   ).textColor
-                }
+                }`}
               >
                 {supplement.adherence_progress.percentage} %
               </span>

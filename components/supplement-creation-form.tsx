@@ -445,7 +445,7 @@ export default function SupplementCreationForm({
       <MotionConfig transition={{ duration: 0.5, type: "spring", bounce: 0 }}>
         <motion.div
           animate={{ height: bounds.height }}
-          className={`relative w-full md:max-w-lg bg-white rounded-2xl overflow-hidden shadow-xl transition-all duration-300 ease-out ${
+          className={`relative w-full md:max-w-lg bg-white rounded-2xl overflow-hidden shadow-xl transition-[opacity,transform] duration-300 ease-out ${
             isAnimating
               ? "opacity-100 translate-y-0"
               : "opacity-0 translate-y-4"
@@ -830,7 +830,7 @@ export default function SupplementCreationForm({
                                   return (
                                     <label
                                       key={time.value}
-                                      className={`flex items-center space-x-3 transition-all duration-150 px-3 py-2 rounded-xl ${
+                                      className={`flex items-center space-x-3 transition-colors duration-150 px-3 py-2 rounded-xl ${
                                         isDisabled
                                           ? "cursor-not-allowed opacity-50"
                                           : "cursor-pointer hover:bg-gray-100"
@@ -847,7 +847,7 @@ export default function SupplementCreationForm({
                                           className="sr-only"
                                         />
                                         <div
-                                          className={`w-5 h-5 rounded-lg border transition-all duration-200 flex items-center justify-center ${
+                                          className={`w-5 h-5 rounded-lg border transition-colors duration-200 flex items-center justify-center ${
                                             isSelected
                                               ? "bg-blue-600 border-blue-600"
                                               : "bg-white border-gray-300 hover:border-gray-400"
@@ -1204,6 +1204,7 @@ const Step3BackfillContent: React.FC<Step3BackfillContentProps> = ({
                   setMissedDays((prev) => prev.filter((_, i) => i !== index));
                 }}
                 className="text-gray-400 hover:text-gray-600"
+                aria-label={`Remove ${day}`}
               >
                 ×
               </button>

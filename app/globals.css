@@ -41,6 +41,27 @@
   .animate-pulse-gray {
     animation: pulse-gray 2s ease-in-out infinite;
   }
+
+  /* Touch-safe hover - only applies on devices with hover capability */
+  @media (hover: hover) and (pointer: fine) {
+    .hover-safe\:bg-gray-50:hover {
+      background-color: rgb(249 250 251);
+    }
+    .hover-safe\:bg-gray-100:hover {
+      background-color: rgb(243 244 246);
+    }
+    .hover-safe\:bg-blue-700:hover {
+      background-color: rgb(29 78 216);
+    }
+  }
+
+  /* Disable hover styles on touch devices */
+  @media (hover: none) {
+    .no-touch-hover:hover {
+      /* Reset hover styles on touch devices */
+      background-color: inherit;
+    }
+  }
 }
 
 @layer base {
@@ -74,5 +95,15 @@
 
   input[type="number"] {
     -moz-appearance: textfield;
+  }
+}
+
+/* Accessibility: Respect user's reduced motion preference */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
   }
 }

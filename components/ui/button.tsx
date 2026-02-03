@@ -17,11 +17,11 @@ const buttonVariants = cva(
         "destructive-secondary": "bg-red-50 hover:bg-red-100 text-red-600",
       },
       size: {
-        default: "h-10 px-3 py-3",
-        sm: "h-8 px-2 py-3",
-        "default-no-icon": "h-10 px-3 py-3",
-        "width-fit-default": "h-10 px-2.5",
-        "width-fit-sm": "h-8 px-2",
+        default: "h-11 px-3 py-3",
+        sm: "h-9 px-2 py-3",
+        "default-no-icon": "h-11 px-3 py-3",
+        "width-fit-default": "h-11 px-2.5",
+        "width-fit-sm": "h-9 px-2",
       },
     },
     defaultVariants: {
