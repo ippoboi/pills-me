@@ -14,6 +14,7 @@ export function AddSupplementMobileButton() {
         <button
           onClick={() => setIsFormOpen(true)}
           className="rounded-[16px] p-3 transition-colors flex items-center justify-center bg-blue-600 text-white"
+          aria-label="Add supplement"
         >
           <HugeiconsIcon icon={Add01FreeIcons} className="h-8 w-8" />
         </button>

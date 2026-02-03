@@ -150,7 +150,7 @@ export default function SupplementsSection({
                 <h2 className="font-medium">{config.label}</h2>
               </div>
               <div className="flex items-center gap-2">
-                <span className="text-blue-600">{left} left</span>
+                <span className="tabular-nums text-blue-600">{left} left</span>
               </div>
             </div>
 
