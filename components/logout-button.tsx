@@ -1,10 +1,9 @@
 "use client";
 
-import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
-import { useRouter } from "next/navigation";
-import { HugeiconsIcon } from "@hugeicons/react";
+import { createClient } from "@/lib/supabase/client";
 import { LogoutSquare01FreeIcons } from "@hugeicons/core-free-icons";
+import { useRouter } from "next/navigation";
 
 export function LogoutButton() {
   const router = useRouter();
@@ -24,12 +23,8 @@ export function LogoutButton() {
       onClick={logout}
       variant="destructive-secondary"
       className="w-full md:w-auto"
+      icon={LogoutSquare01FreeIcons}
     >
-      <HugeiconsIcon
-        icon={LogoutSquare01FreeIcons}
-        strokeWidth={2}
-        className="w-4 h-4"
-      />
       Logout
     </Button>
   );

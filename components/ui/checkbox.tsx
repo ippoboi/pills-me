@@ -38,7 +38,7 @@ const Checkbox = React.forwardRef<HTMLInputElement, CheckboxProps>(
     return (
       <label
         className={cn(
-          "relative inline-flex items-center justify-center min-w-[44px] min-h-[44px] transition-colors duration-150",
+          "relative inline-flex items-center justify-center transition-colors duration-150",
           disabled ? "cursor-not-allowed opacity-50" : "cursor-pointer",
           className
         )}

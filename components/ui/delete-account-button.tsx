@@ -10,8 +10,11 @@ interface DeleteAccountButtonProps {
 
 export function DeleteAccountButton({ onClick }: DeleteAccountButtonProps) {
   return (
-    <Button variant={"destructive-secondary"} onClick={onClick}>
-      <HugeiconsIcon icon={Delete02FreeIcons} strokeWidth={2} />
+    <Button
+      variant={"destructive-secondary"}
+      onClick={onClick}
+      icon={Delete02FreeIcons}
+    >
       Delete account
     </Button>
   );
