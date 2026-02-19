@@ -3,10 +3,7 @@
 import { useMemo, useEffect, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import {
-  Copy01FreeIcons,
-  Tick02FreeIcons,
-} from "@hugeicons/core-free-icons";
+import { Copy01FreeIcons, Tick02FreeIcons } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
 
 import { useCurrentUser } from "@/lib/hooks";
@@ -198,22 +195,6 @@ export default function ProfilePage() {
 
         {/* Browser Notifications Section - Only show when there are browser-level issues */}
         <PushNotificationManager />
-
-        <div className="w-full py-4 flex justify-center">
-          <div className="h-px w-4/5 bg-gray-200 rounded-full" />
-        </div>
-
-        {/* Danger zone section */}
-        <div className="flex w-full flex-col md:flex-row gap-6 md:gap-32 md:items-center bg-white p-6 md:p-8 rounded-[32px] shadow-sm">
-          <div className="space-y-2">
-            <h2 className="text-red-600 text-lg">Danger zone</h2>
-            <p className="text-gray-600 ">
-              You will delete all your data like tracked supplements, user
-              information and passkey. This action cannot be undone.
-            </p>
-          </div>
-          <DeleteAccountButton onClick={() => setDeleteModalOpen(true)} />
-        </div>
       </div>
 
       {/* Delete Account Modal */}

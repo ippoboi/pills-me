@@ -57,7 +57,7 @@ const Selector = React.forwardRef<HTMLButtonElement, SelectorProps>(
         <DropdownMenu.Portal>
           <DropdownMenu.Content
             className={cn(
-              "z-50 min-w-[var(--radix-dropdown-menu-trigger-width)] overflow-hidden",
+              "z-50 min-w-[var(--radix-dropdown-menu-trigger-width)] max-h-[280px] overflow-y-auto",
               "bg-white rounded-xl border border-gray-100 shadow-lg",
               "data-[state=open]:animate-in data-[state=closed]:animate-out",
               "data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0",

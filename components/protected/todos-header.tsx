@@ -103,12 +103,8 @@ const TodosHeader = memo(function TodosHeader({
             variant="default"
             className="hidden md:flex"
             onClick={onTrackNew}
+            icon={Add01FreeIcons}
           >
-            <HugeiconsIcon
-              icon={Add01FreeIcons}
-              strokeWidth={2}
-              className="w-4 h-4"
-            />
             Track new
           </Button>
         </div>
