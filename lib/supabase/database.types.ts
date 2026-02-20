@@ -50,106 +50,6 @@ export type Database = {
         }
         Relationships: []
       }
-      biomarker_categories: {
-        Row: {
-          description: string | null
-          icon: string | null
-          id: string
-          label: string
-          sort_order: number
-        }
-        Insert: {
-          description?: string | null
-          icon?: string | null
-          id: string
-          label: string
-          sort_order: number
-        }
-        Update: {
-          description?: string | null
-          icon?: string | null
-          id?: string
-          label?: string
-          sort_order?: number
-        }
-        Relationships: []
-      }
-      biomarker_synonyms: {
-        Row: {
-          biomarker_id: string
-          created_at: string
-          id: number
-          synonym: string
-        }
-        Insert: {
-          biomarker_id: string
-          created_at?: string
-          id?: number
-          synonym: string
-        }
-        Update: {
-          biomarker_id?: string
-          created_at?: string
-          id?: number
-          synonym?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "biomarker_synonyms_biomarker_id_fkey"
-            columns: ["biomarker_id"]
-            isOneToOne: false
-            referencedRelation: "biomarkers_information"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      biomarkers_information: {
-        Row: {
-          category_id: string
-          created_at: string
-          description: string | null
-          id: string
-          name: string
-          short_name: string
-          slug: string
-          thresholds: Json
-          unit: string
-          updated_at: string
-        }
-        Insert: {
-          category_id: string
-          created_at?: string
-          description?: string | null
-          id?: string
-          name: string
-          short_name: string
-          slug: string
-          thresholds: Json
-          unit: string
-          updated_at?: string
-        }
-        Update: {
-          category_id?: string
-          created_at?: string
-          description?: string | null
-          id?: string
-          name?: string
-          short_name?: string
-          slug?: string
-          thresholds?: Json
-          unit?: string
-          updated_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "biomarkers_information_category_fk"
-            columns: ["category_id"]
-            isOneToOne: false
-            referencedRelation: "biomarker_categories"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       notification_preferences: {
         Row: {
           app_updates_enabled: boolean
@@ -188,6 +88,115 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      nutrient_categories: {
+        Row: {
+          description: string | null
+          icon: string | null
+          id: string
+          label: string
+          sort_order: number | null
+        }
+        Insert: {
+          description?: string | null
+          icon?: string | null
+          id: string
+          label: string
+          sort_order?: number | null
+        }
+        Update: {
+          description?: string | null
+          icon?: string | null
+          id?: string
+          label?: string
+          sort_order?: number | null
+        }
+        Relationships: []
+      }
+      nutrient_limits: {
+        Row: {
+          age_group: string
+          id: string
+          nutrient_id: string
+          rda: number | null
+          sex: string
+          source: string | null
+          unit: string
+          upper_limit: number | null
+        }
+        Insert: {
+          age_group: string
+          id?: string
+          nutrient_id: string
+          rda?: number | null
+          sex: string
+          source?: string | null
+          unit: string
+          upper_limit?: number | null
+        }
+        Update: {
+          age_group?: string
+          id?: string
+          nutrient_id?: string
+          rda?: number | null
+          sex?: string
+          source?: string | null
+          unit?: string
+          upper_limit?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "nutrient_limits_nutrient_id_fkey"
+            columns: ["nutrient_id"]
+            isOneToOne: false
+            referencedRelation: "nutrients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      nutrients: {
+        Row: {
+          alternate_unit: string | null
+          category_id: string | null
+          conversion_factor: number | null
+          created_at: string | null
+          default_unit: string
+          description: string | null
+          id: string
+          name: string
+          slug: string
+        }
+        Insert: {
+          alternate_unit?: string | null
+          category_id?: string | null
+          conversion_factor?: number | null
+          created_at?: string | null
+          default_unit: string
+          description?: string | null
+          id?: string
+          name: string
+          slug: string
+        }
+        Update: {
+          alternate_unit?: string | null
+          category_id?: string | null
+          conversion_factor?: number | null
+          created_at?: string | null
+          default_unit?: string
+          description?: string | null
+          id?: string
+          name?: string
+          slug?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "nutrients_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "nutrient_categories"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       passkey_challenges: {
         Row: {
@@ -270,6 +279,50 @@ export type Database = {
         }
         Relationships: []
       }
+      plan_items: {
+        Row: {
+          brand: string | null
+          created_at: string | null
+          id: string
+          image_url: string | null
+          name: string
+          nutrients: Json
+          plan_id: string
+          servings_per_day: number | null
+          source_type: string | null
+        }
+        Insert: {
+          brand?: string | null
+          created_at?: string | null
+          id?: string
+          image_url?: string | null
+          name: string
+          nutrients?: Json
+          plan_id: string
+          servings_per_day?: number | null
+          source_type?: string | null
+        }
+        Update: {
+          brand?: string | null
+          created_at?: string | null
+          id?: string
+          image_url?: string | null
+          name?: string
+          nutrients?: Json
+          plan_id?: string
+          servings_per_day?: number | null
+          source_type?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "plan_items_plan_id_fkey"
+            columns: ["plan_id"]
+            isOneToOne: false
+            referencedRelation: "supplement_plans"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       push_subscriptions: {
         Row: {
           created_at: string
@@ -296,129 +349,6 @@ export type Database = {
           subscription_data?: Json
           updated_at?: string
           user_agent?: string | null
-          user_id?: string
-        }
-        Relationships: []
-      }
-      raw_unmatched_data: {
-        Row: {
-          attempted_at: string
-          best_match_biomarker_id: string | null
-          best_match_name: string | null
-          created_at: string
-          id: string
-          match_confidence: number | null
-          processing_status: Database["public"]["Enums"]["unmatched_processing_status"]
-          raw_name: string
-          raw_unit: string | null
-          raw_value_numeric: number | null
-          raw_value_text: string | null
-          report_id: string
-          resolution_action:
-            | Database["public"]["Enums"]["unmatched_resolution_action"]
-            | null
-          resolution_notes: string | null
-          resolved_at: string | null
-          reviewed_at: string | null
-          user_id: string
-        }
-        Insert: {
-          attempted_at?: string
-          best_match_biomarker_id?: string | null
-          best_match_name?: string | null
-          created_at?: string
-          id?: string
-          match_confidence?: number | null
-          processing_status?: Database["public"]["Enums"]["unmatched_processing_status"]
-          raw_name: string
-          raw_unit?: string | null
-          raw_value_numeric?: number | null
-          raw_value_text?: string | null
-          report_id: string
-          resolution_action?:
-            | Database["public"]["Enums"]["unmatched_resolution_action"]
-            | null
-          resolution_notes?: string | null
-          resolved_at?: string | null
-          reviewed_at?: string | null
-          user_id: string
-        }
-        Update: {
-          attempted_at?: string
-          best_match_biomarker_id?: string | null
-          best_match_name?: string | null
-          created_at?: string
-          id?: string
-          match_confidence?: number | null
-          processing_status?: Database["public"]["Enums"]["unmatched_processing_status"]
-          raw_name?: string
-          raw_unit?: string | null
-          raw_value_numeric?: number | null
-          raw_value_text?: string | null
-          report_id?: string
-          resolution_action?:
-            | Database["public"]["Enums"]["unmatched_resolution_action"]
-            | null
-          resolution_notes?: string | null
-          resolved_at?: string | null
-          reviewed_at?: string | null
-          user_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "raw_unmatched_data_best_match_biomarker_id_fkey"
-            columns: ["best_match_biomarker_id"]
-            isOneToOne: false
-            referencedRelation: "biomarkers_information"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "raw_unmatched_data_report_id_fkey"
-            columns: ["report_id"]
-            isOneToOne: false
-            referencedRelation: "reports"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      reports: {
-        Row: {
-          biomarker_count: number
-          collected_at: string | null
-          country: string | null
-          created_at: string
-          id: string
-          lab_name: string | null
-          raw_biomarkers: Json | null
-          report_name: string
-          status: Database["public"]["Enums"]["report_status"]
-          timezone_id: string | null
-          user_id: string
-        }
-        Insert: {
-          biomarker_count?: number
-          collected_at?: string | null
-          country?: string | null
-          created_at?: string
-          id?: string
-          lab_name?: string | null
-          raw_biomarkers?: Json | null
-          report_name: string
-          status?: Database["public"]["Enums"]["report_status"]
-          timezone_id?: string | null
-          user_id: string
-        }
-        Update: {
-          biomarker_count?: number
-          collected_at?: string | null
-          country?: string | null
-          created_at?: string
-          id?: string
-          lab_name?: string | null
-          raw_biomarkers?: Json | null
-          report_name?: string
-          status?: Database["public"]["Enums"]["report_status"]
-          timezone_id?: string | null
           user_id?: string
         }
         Relationships: []
@@ -468,6 +398,66 @@ export type Database = {
           },
         ]
       }
+      supplement_categories: {
+        Row: {
+          description: string | null
+          icon: string | null
+          id: string
+          label: string
+          sort_order: number | null
+        }
+        Insert: {
+          description?: string | null
+          icon?: string | null
+          id: string
+          label: string
+          sort_order?: number | null
+        }
+        Update: {
+          description?: string | null
+          icon?: string | null
+          id?: string
+          label?: string
+          sort_order?: number | null
+        }
+        Relationships: []
+      }
+      supplement_plans: {
+        Row: {
+          created_at: string | null
+          id: string
+          is_default: boolean | null
+          name: string
+          notes: string | null
+          start_date: string | null
+          status: Database["public"]["Enums"]["plan_status"] | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          is_default?: boolean | null
+          name: string
+          notes?: string | null
+          start_date?: string | null
+          status?: Database["public"]["Enums"]["plan_status"] | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          is_default?: boolean | null
+          name?: string
+          notes?: string | null
+          start_date?: string | null
+          status?: Database["public"]["Enums"]["plan_status"] | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       supplement_schedules: {
         Row: {
           created_at: string
@@ -499,7 +489,9 @@ export type Database = {
       }
       supplements: {
         Row: {
+          brand: string | null
           capsules_per_take: number
+          category_id: string | null
           created_at: string
           deleted_at: string | null
           end_date: string | null
@@ -507,6 +499,7 @@ export type Database = {
           inventory_total: number | null
           low_inventory_threshold: number | null
           name: string
+          plan_id: string | null
           reason: string | null
           recommendation: string | null
           source_name: string | null
@@ -517,7 +510,9 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          brand?: string | null
           capsules_per_take?: number
+          category_id?: string | null
           created_at?: string
           deleted_at?: string | null
           end_date?: string | null
@@ -525,6 +520,7 @@ export type Database = {
           inventory_total?: number | null
           low_inventory_threshold?: number | null
           name: string
+          plan_id?: string | null
           reason?: string | null
           recommendation?: string | null
           source_name?: string | null
@@ -535,7 +531,9 @@ export type Database = {
           user_id: string
         }
         Update: {
+          brand?: string | null
           capsules_per_take?: number
+          category_id?: string | null
           created_at?: string
           deleted_at?: string | null
           end_date?: string | null
@@ -543,6 +541,7 @@ export type Database = {
           inventory_total?: number | null
           low_inventory_threshold?: number | null
           name?: string
+          plan_id?: string | null
           reason?: string | null
           recommendation?: string | null
           source_name?: string | null
@@ -552,61 +551,26 @@ export type Database = {
           updated_at?: string
           user_id?: string
         }
-        Relationships: []
-      }
-      user_biomarkers: {
-        Row: {
-          biomarker_id: string
-          created_at: string
-          id: number
-          measured_at: string | null
-          raw_name: string | null
-          report_id: string | null
-          user_id: string
-          value_numeric: number | null
-          value_text: string | null
-        }
-        Insert: {
-          biomarker_id: string
-          created_at?: string
-          id?: number
-          measured_at?: string | null
-          raw_name?: string | null
-          report_id?: string | null
-          user_id: string
-          value_numeric?: number | null
-          value_text?: string | null
-        }
-        Update: {
-          biomarker_id?: string
-          created_at?: string
-          id?: number
-          measured_at?: string | null
-          raw_name?: string | null
-          report_id?: string | null
-          user_id?: string
-          value_numeric?: number | null
-          value_text?: string | null
-        }
         Relationships: [
           {
-            foreignKeyName: "user_biomarkers_biomarker_id_fkey"
-            columns: ["biomarker_id"]
+            foreignKeyName: "supplements_category_id_fkey"
+            columns: ["category_id"]
             isOneToOne: false
-            referencedRelation: "biomarkers_information"
+            referencedRelation: "supplement_categories"
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "user_biomarkers_report_id_fkey"
-            columns: ["report_id"]
+            foreignKeyName: "supplements_plan_id_fkey"
+            columns: ["plan_id"]
             isOneToOne: false
-            referencedRelation: "reports"
+            referencedRelation: "supplement_plans"
             referencedColumns: ["id"]
           },
         ]
       }
       user_information: {
         Row: {
+          birthdate: string | null
           created_at: string
           id: string
           sex: Database["public"]["Enums"]["user_sex"]
@@ -614,6 +578,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          birthdate?: string | null
           created_at?: string
           id?: string
           sex: Database["public"]["Enums"]["user_sex"]
@@ -621,6 +586,7 @@ export type Database = {
           user_id: string
         }
         Update: {
+          birthdate?: string | null
           created_at?: string
           id?: string
           sex?: Database["public"]["Enums"]["user_sex"]
@@ -666,24 +632,9 @@ export type Database = {
       show_trgm: { Args: { "": string }; Returns: string[] }
     }
     Enums: {
-      report_status:
-        | "EXTRACTING"
-        | "VERIFYING"
-        | "SAVING"
-        | "COMPLETED"
-        | "CANCELED"
-        | "UNMATCHED"
+      plan_status: "draft" | "active" | "paused" | "archived"
       supplement_status: "ACTIVE" | "COMPLETED" | "CANCELLED"
       time_of_day: "MORNING" | "LUNCH" | "DINNER" | "BEFORE_SLEEP"
-      unmatched_processing_status:
-        | "UNMATCHED"
-        | "REVIEWED"
-        | "RESOLVED"
-        | "REFUSED"
-      unmatched_resolution_action:
-        | "ADDED_SYNONYM"
-        | "MARKED_INVALID"
-        | "CREATED_BIOMARKER"
       user_sex: "male" | "female"
     }
     CompositeTypes: {
@@ -812,27 +763,9 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
-      report_status: [
-        "EXTRACTING",
-        "VERIFYING",
-        "SAVING",
-        "COMPLETED",
-        "CANCELED",
-        "UNMATCHED",
-      ],
+      plan_status: ["draft", "active", "paused", "archived"],
       supplement_status: ["ACTIVE", "COMPLETED", "CANCELLED"],
       time_of_day: ["MORNING", "LUNCH", "DINNER", "BEFORE_SLEEP"],
-      unmatched_processing_status: [
-        "UNMATCHED",
-        "REVIEWED",
-        "RESOLVED",
-        "REFUSED",
-      ],
-      unmatched_resolution_action: [
-        "ADDED_SYNONYM",
-        "MARKED_INVALID",
-        "CREATED_BIOMARKER",
-      ],
       user_sex: ["male", "female"],
     },
   },

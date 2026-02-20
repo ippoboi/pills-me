@@ -47,3 +47,7 @@ next-env.d.ts
 **/public/precache.*.js
 
 landing_page_copy.md
+
+.claude
+CLAUDE.md
+.mcp.json
