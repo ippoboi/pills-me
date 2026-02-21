@@ -2,6 +2,7 @@ import { Button } from "@/components/ui/button";
 import { Database, Download, Eye, Lock, Shield } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
+import { LastUpdatedDate } from "./LastUpdatedDate";
 
 export const metadata = {
   title: "Privacy Policy | Pillker",
@@ -55,14 +56,7 @@ export default function PrivacyPage() {
             <p className="text-lg text-gray-800">
               Your health data is yours. Here&apos;s how we protect it.
             </p>
-            <p className="mt-2 text-sm text-gray-800">
-              Last updated:{" "}
-              {new Date().toLocaleDateString("en-US", {
-                year: "numeric",
-                month: "long",
-                day: "numeric",
-              })}
-            </p>
+            <LastUpdatedDate />
           </div>
 
           {/* Content */}
