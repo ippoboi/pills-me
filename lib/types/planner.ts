@@ -179,6 +179,22 @@ export interface ActivatePlanInput {
   timezone: string;
 }
 
+/** Input for creating a plan item (supplement in a plan) */
+export interface CreatePlanItemInput {
+  name: string;
+  brand?: string;
+  servingsPerDay: number;
+  nutrients: NutrientEntry[];
+}
+
+/** Input for updating a plan item */
+export interface UpdatePlanItemInput {
+  name?: string;
+  brand?: string;
+  servingsPerDay?: number;
+  nutrients?: NutrientEntry[];
+}
+
 // =============================================================================
 // API Response Types
 // =============================================================================
@@ -233,4 +249,22 @@ export interface ActiveIntakeResponse {
     ageGroup: AgeGroup;
     sex: UserSex;
   };
+}
+
+/** Response for POST /api/planner/plans/[id]/items */
+export interface CreatePlanItemResponse {
+  success: true;
+  item: PlanItem;
+}
+
+/** Response for PUT /api/planner/plans/[id]/items/[itemId] */
+export interface UpdatePlanItemResponse {
+  success: true;
+  item: PlanItem;
+}
+
+/** Response for DELETE /api/planner/plans/[id]/items/[itemId] */
+export interface DeletePlanItemResponse {
+  success: true;
+  message: string;
 }

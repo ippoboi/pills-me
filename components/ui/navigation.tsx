@@ -1,6 +1,10 @@
 "use client";
 
-import { GivePillFreeIcons, Sun01FreeIcons } from "@hugeicons/core-free-icons";
+import {
+  GivePillFreeIcons,
+  Sun01FreeIcons,
+  Analytics01FreeIcons,
+} from "@hugeicons/core-free-icons";
 import { HugeiconsIcon, HugeiconsIconProps } from "@hugeicons/react";
 import { Avatar, AvatarFallback, AvatarImage } from "./avatar";
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -21,6 +25,11 @@ const tabs: {
     label: "Supplements",
     icon: GivePillFreeIcons,
     href: "/supplements",
+  },
+  {
+    label: "Planner",
+    icon: Analytics01FreeIcons,
+    href: "/planner",
   },
   {
     label: "Profile",

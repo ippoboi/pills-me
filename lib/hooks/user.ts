@@ -1,8 +1,21 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { getCurrentUser } from "../queries";
 import { userKeys } from "../queries";
+import { plannerKeys } from "../keys/planner-keys";
 import type { CurrentUser } from "../types";
-import { deleteAccount, type DeleteAccountResponse } from "../mutations/users";
+import {
+  deleteAccount,
+  getUserInformation,
+  updateUserInformation,
+  type DeleteAccountResponse,
+  type UserInformationInput,
+  type UserInformationResponse,
+  type UpdateUserInformationResponse,
+} from "../mutations/users";
+
+// =============================================================================
+// Current User
+// =============================================================================
 
 export function useCurrentUser() {
   return useQuery<CurrentUser, Error>({
@@ -21,7 +34,56 @@ export function useCurrentUser() {
   });
 }
 
-// Delete Account Mutation Hook
+// =============================================================================
+// User Information (Demographics)
+// =============================================================================
+
+/**
+ * Query hook for user demographics (birthdate, sex)
+ */
+export function useUserInformation() {
+  return useQuery<UserInformationResponse, Error>({
+    queryKey: [...userKeys.current, "information"],
+    queryFn: getUserInformation,
+    staleTime: 5 * 60 * 1000,
+  });
+}
+
+/**
+ * Mutation hook for updating user demographics
+ * Invalidates user queries and planner limits (which depend on demographics)
+ */
+export function useUpdateUserInformation() {
+  const queryClient = useQueryClient();
+
+  return useMutation<UpdateUserInformationResponse, Error, UserInformationInput>({
+    mutationFn: updateUserInformation,
+    onSuccess: async () => {
+      // Invalidate user queries
+      await queryClient.invalidateQueries({
+        queryKey: userKeys.current,
+      });
+
+      // Invalidate planner limits and active intake (depend on demographics)
+      await Promise.all([
+        queryClient.invalidateQueries({
+          queryKey: plannerKeys.limits(),
+        }),
+        queryClient.invalidateQueries({
+          queryKey: plannerKeys.activeIntake(),
+        }),
+      ]);
+    },
+    onError: (error) => {
+      console.error("Failed to update user information:", error);
+    },
+  });
+}
+
+// =============================================================================
+// Delete Account
+// =============================================================================
+
 export function useDeleteAccount() {
   const queryClient = useQueryClient();
 

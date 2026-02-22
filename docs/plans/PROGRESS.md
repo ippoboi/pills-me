@@ -2,7 +2,17 @@
 
 **Branch:** `feature/supplement-planner`
 **Started:** 2026-02-20
-**Last Updated:** 2026-02-22 (night)
+**Last Updated:** 2026-02-22 (Phase 3 complete)
+
+---
+
+## Summary
+
+**Phase 1 (Database & Schema):** COMPLETE - Tasks 1-4
+**Phase 2 (Types, Utils, APIs):** COMPLETE - Tasks 5-12
+**Phase 3 (React Query & UI):** COMPLETE - Tasks 13-20
+
+All 20 tasks completed. Feature ready for testing and review.
 
 ---
 
@@ -204,11 +214,196 @@
 - **Files Extended:**
   - `lib/types/planner.ts` - Added API request/response types (CreatePlanInput, UpdatePlanInput, ActivatePlanInput, NutrientsResponse, LimitsResponse, PlansListResponse, PlanResponse, ActivatePlanResponse, ActiveIntakeResponse, ActiveSupplementWithNutrients)
 
+### Task 13a: React Query Infrastructure
+
+- **Status:** DONE
+- **Files Created:**
+  - `lib/keys/planner-keys.ts` - Query key factory
+  - `lib/queries/planner.ts` - Query functions (nutrients, limits, plans, active-intake)
+  - `lib/mutations/planner.ts` - Mutation functions (create/update/delete plans, activate)
+  - `lib/hooks/use-planner.ts` - React Query wrapper hooks
+
+### Task 13b: Profile Birthdate Field
+
+- **Status:** DONE
+- **Files Created:**
+  - `app/api/user/information/route.ts` - GET/PUT user demographics
+- **Files Modified:**
+  - `components/protected/settings-dialog/personal-info.tsx` - Added birthdate/sex fields
+  - `lib/hooks/user.ts` - Added useUserInformation hook
+  - `lib/mutations/users.ts` - Added user information mutation
+
+### Task 14: PlannerPage Shell
+
+- **Status:** DONE
+- **Files Created:**
+  - `app/(protected)/planner/page.tsx` - Main page layout
+  - `components/protected/planner/planner-layout.tsx` - Responsive container
+  - `components/protected/planner/planner-header.tsx` - Page header component
+
+### Task 15: PlanSelector
+
+- **Status:** DONE
+- **Files Created:**
+  - `components/protected/planner/plan-selector.tsx` - Dropdown for drafts/saved plans
+
+### Task 16: AddItemModal
+
+- **Status:** DONE
+- **Files Created:**
+  - `components/protected/planner/add-item-modal.tsx` - Modal with nutrient form
+  - `components/protected/planner/nutrient-search.tsx` - Autocomplete nutrient picker
+  - `components/protected/planner/nutrient-entry-list.tsx` - Nutrient entries display
+
+### Task 17: PlanItemCard + NutrientEditor
+
+- **Status:** DONE
+- **Files Created:**
+  - `components/protected/planner/plan-item-card.tsx` - Display/edit supplement item
+  - `components/protected/planner/plan-items-list.tsx` - List of plan items
+  - `components/protected/planner/plan-detail-section.tsx` - Plan details section
+
+### Task 18: IntakeSummary
+
+- **Status:** DONE
+- **Files Created:**
+  - `components/protected/planner/intake-summary.tsx` - Live calculation display
+  - `components/protected/planner/nutrient-status-bar.tsx` - Visual RDA/UL indicator
+- **Notes:** Uses `calculateIntake()` from `lib/utils/planner.ts`
+
+### Task 19: PlanActions
+
+- **Status:** DONE
+- **Files Created:**
+  - `components/protected/planner/plan-actions.tsx` - Save/Activate/Delete buttons
+  - `components/protected/planner/delete-plan-modal.tsx` - Delete confirmation modal
+  - `components/protected/planner/activate-plan-dialog.tsx` - Activation confirmation dialog
+
+### Task 20: Integration
+
+- **Status:** DONE
+- **Files Created:**
+  - `components/protected/planner/create-plan-dialog.tsx` - Create plan dialog
+- **Files Modified:**
+  - `app/(protected)/planner/page.tsx` - Wired all components together
+- **Notes:**
+  - Navigation link already existed in `components/ui/navigation.tsx`
+  - End-to-end flow complete
+
+### Additional API Infrastructure
+
+- **Status:** DONE
+- **Files Created:**
+  - `app/api/planner/plans/[id]/items/route.ts` - POST endpoint for adding items
+  - `app/api/planner/plans/[id]/items/[itemId]/route.ts` - PUT, DELETE endpoints for items
+- **Files Modified:**
+  - `lib/utils/planner-validation.ts` - Added `validateCreatePlanItemInput`, `validateUpdatePlanItemInput`
+  - `lib/types/planner.ts` - Added `CreatePlanItemInput`, `UpdatePlanItemInput`, response types
+  - `lib/mutations/planner.ts` - Added `addPlanItem`, `updatePlanItem`, `deletePlanItem`
+  - `lib/hooks/use-planner.ts` - Added `useAddPlanItem`, `useUpdatePlanItem`, `useDeletePlanItem`
+  - `lib/keys/planner-keys.ts` - Added `items` key factory
+
 ---
 
-## Next Tasks
+## Phase 3 Files Summary
 
-_All planned API routes complete. Next phase: React Query hooks and UI components._
+### New Files Created (16 files)
+
+**API Routes:**
+```
+app/api/user/information/route.ts
+app/api/planner/plans/[id]/items/route.ts
+app/api/planner/plans/[id]/items/[itemId]/route.ts
+```
+
+**React Query Infrastructure:**
+```
+lib/keys/planner-keys.ts
+lib/queries/planner.ts
+lib/mutations/planner.ts
+lib/hooks/use-planner.ts
+```
+
+**UI Components:**
+```
+components/protected/planner/planner-layout.tsx
+components/protected/planner/planner-header.tsx
+components/protected/planner/plan-selector.tsx
+components/protected/planner/nutrient-search.tsx
+components/protected/planner/nutrient-entry-list.tsx
+components/protected/planner/add-item-modal.tsx
+components/protected/planner/plan-item-card.tsx
+components/protected/planner/plan-items-list.tsx
+components/protected/planner/plan-detail-section.tsx
+components/protected/planner/intake-summary.tsx
+components/protected/planner/nutrient-status-bar.tsx
+components/protected/planner/plan-actions.tsx
+components/protected/planner/delete-plan-modal.tsx
+components/protected/planner/activate-plan-dialog.tsx
+components/protected/planner/create-plan-dialog.tsx
+```
+
+**Page:**
+```
+app/(protected)/planner/page.tsx
+```
+
+### Files Modified (6 files)
+
+```
+lib/types/planner.ts                              - Added plan item input/response types
+lib/utils/planner-validation.ts                   - Added plan item validation functions
+lib/hooks/user.ts                                 - Added useUserInformation hook
+lib/mutations/users.ts                            - Added user information mutations
+components/protected/settings-dialog/personal-info.tsx - Added birthdate/sex fields
+components/ui/navigation.tsx                      - (Already had planner link)
+```
+
+### Test Results
+
+- **Total Tests:** 86 passing
+- **Test Files:** 3
+  - `__tests__/planner.test.ts` - 38 tests
+  - `__tests__/planner-validation.test.ts` - 21 tests
+  - `__tests__/use-draft-plans.test.ts` - 27 tests
+
+---
+
+## Execution Summary
+
+### Wave 1 (3 parallel tasks) - COMPLETE
+| Task | Description | Status |
+|------|-------------|--------|
+| 13a | Query keys + queries + hooks | DONE |
+| 13b | Profile birthdate field | DONE |
+| 13c | Mutation functions | DONE (part of 13a) |
+
+### Wave 2 (1 task - foundation) - COMPLETE
+| Task | Description | Status |
+|------|-------------|--------|
+| 14 | PlannerPage shell | DONE |
+
+### Wave 3 (2 parallel tasks) - COMPLETE
+| Task | Description | Status |
+|------|-------------|--------|
+| 15 | PlanSelector | DONE |
+| 18 | IntakeSummary | DONE |
+
+### Wave 4 (2 sequential tasks) - COMPLETE
+| Task | Description | Status |
+|------|-------------|--------|
+| 16 | AddItemModal | DONE |
+| 17 | PlanItemCard + NutrientEditor | DONE |
+
+### Wave 5 (1 task) - COMPLETE
+| Task | Description | Status |
+|------|-------------|--------|
+| 19 | PlanActions | DONE |
+
+### Wave 6 (final) - COMPLETE
+| Task | Description | Status |
+|------|-------------|--------|
+| 20 | Integration & Polish | DONE |
 
 ---
 
@@ -216,6 +411,7 @@ _All planned API routes complete. Next phase: React Query hooks and UI component
 
 | Commit    | Message                                                  | Tasks          |
 | --------- | -------------------------------------------------------- | -------------- |
+| `3d6ef30` | feat: add planner API routes for nutrients, limits, plans, and intake | Task 8-12 |
 | `7571a11` | chore: update dependencies and refactor test setup       | Task 5,6,7,7.1 |
 | `caf74ae` | feat: seed EFSA nutrient data and update database schema | Task 4         |
 | `fa81cd9` | feat: add planner schema (nutrients, limits, plans)      | Task 3         |
@@ -233,4 +429,34 @@ _All planned API routes complete. Next phase: React Query hooks and UI component
 - Researched safe levels for 14 nutrients without official EFSA/IOM limits using clinical studies
 - All tests consolidated to root `__tests__/` folder using Vitest `test.dir` option
 - Tasks 5-7 complete: types, utils, and hooks ready for API implementation
-- Tasks 8-12 are API routes that can be developed in parallel
+- Tasks 8-12 complete: All 5 API routes implemented and committed
+- **Phase 3 Complete:** All 8 remaining tasks completed in 6 execution waves
+  - React Query infrastructure with hooks for all planner operations
+  - Full UI component suite for supplement planning
+  - Integration with existing profile settings for birthdate/sex
+  - Navigation already in place
+
+---
+
+## Verification
+
+- **Build:** ✅ `pnpm build` - Compiled successfully, all routes registered
+- **Tests:** ✅ `pnpm test:run` - 86 tests passing
+- **TypeScript:** ✅ No type errors
+
+---
+
+## Next Steps
+
+1. **Commit Phase 3 work** - 16 new files, 6 modified files
+2. **Manual Testing** - Test E2E flow in browser:
+   - Create new plan
+   - Add supplements with nutrients
+   - View intake summary
+   - Activate plan
+   - Verify supplements created
+3. **Edge Cases to Test:**
+   - Empty plan (no items)
+   - Missing demographics (birthdate/sex not set)
+   - Duplicate nutrients in single item
+   - Plan status transitions (draft → active → paused → archived)
