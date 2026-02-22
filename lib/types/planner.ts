@@ -152,3 +152,85 @@ export interface UserDemographics {
 
 /** EFSA age groups for nutrient limits */
 export type AgeGroup = "18-50" | "51-70" | "71+";
+
+/** Time of day type (alias for use in this module) */
+type TimeOfDay = Database["public"]["Enums"]["time_of_day"];
+
+// =============================================================================
+// API Request Types
+// =============================================================================
+
+/** Input for creating a new plan */
+export interface CreatePlanInput {
+  name: string;
+  notes?: string;
+}
+
+/** Input for updating a plan */
+export interface UpdatePlanInput {
+  name?: string;
+  notes?: string;
+  status?: PlanStatus;
+}
+
+/** Input for activating a plan */
+export interface ActivatePlanInput {
+  schedules: TimeOfDay[];
+  timezone: string;
+}
+
+// =============================================================================
+// API Response Types
+// =============================================================================
+
+/** Response for GET /api/planner/nutrients */
+export interface NutrientsResponse {
+  nutrients: NutrientWithCategory[];
+}
+
+/** Response for GET /api/planner/limits */
+export interface LimitsResponse {
+  limits: NutrientLimitWithNutrient[];
+  demographics: {
+    ageGroup: AgeGroup;
+    sex: UserSex;
+  };
+}
+
+/** Response for GET /api/planner/plans */
+export interface PlansListResponse {
+  plans: SupplementPlan[];
+}
+
+/** Response for GET /api/planner/plans/[id] */
+export interface PlanResponse {
+  plan: PlanWithItems;
+}
+
+/** Response for POST /api/planner/plans/[id]/activate */
+export interface ActivatePlanResponse {
+  success: true;
+  plan: SupplementPlan;
+  supplements: { id: string; name: string }[];
+  schedulesCreated: number;
+}
+
+/** Active supplement with nutrient data */
+export interface ActiveSupplementWithNutrients {
+  id: string;
+  name: string;
+  brand: string | null;
+  nutrients: NutrientEntry[];
+  servingsPerDay: number;
+  planId: string;
+}
+
+/** Response for GET /api/planner/active-intake */
+export interface ActiveIntakeResponse {
+  supplements: ActiveSupplementWithNutrients[];
+  intakeResults?: IntakeResult[];
+  demographics?: {
+    ageGroup: AgeGroup;
+    sex: UserSex;
+  };
+}

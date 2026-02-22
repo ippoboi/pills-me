@@ -2,7 +2,7 @@
 
 **Branch:** `feature/supplement-planner`
 **Started:** 2026-02-20
-**Last Updated:** 2026-02-22 (evening)
+**Last Updated:** 2026-02-22 (night)
 
 ---
 
@@ -136,62 +136,91 @@
   - `__tests__/use-draft-plans.test.ts` - 27 hook tests
 - **Config Update:** `vitest.config.ts` - Added `dir: './__tests__'` (Vitest recommended)
 - **Deleted:** `lib/__tests__/`, `lib/utils/__tests__/`, `lib/hooks/__tests__/`
-- **Result:** 65 tests passing
-
----
-
-## Next Tasks (API Routes - Can Run in Parallel)
+- **Result:** 86 tests passing (65 original + 21 validation tests)
 
 ### Task 8: GET /api/planner/nutrients
 
-- **Status:** PENDING
-- **Files to Create:**
+- **Status:** DONE
+- **Files Created:**
   - `app/api/planner/nutrients/route.ts`
-- **Endpoint:** Returns all nutrients with category data
-- **Auth:** Required (authenticated users only)
+- **Endpoint:** Returns all nutrients with category data joined
+- **Response:** `{ nutrients: NutrientWithCategory[] }`
 
 ### Task 9: GET /api/planner/limits
 
-- **Status:** PENDING
-- **Files to Create:**
+- **Status:** DONE
+- **Files Created:**
   - `app/api/planner/limits/route.ts`
 - **Endpoint:** Returns nutrient limits based on user's age/sex demographics
-- **Features:** Auto-determines age group from user's birthdate
+- **Features:**
+  - Auto-determines age group using `getAgeGroup(birthdate)`
+  - Returns limits matching user's sex OR 'all'
+  - Returns 400 if birthdate/sex not set
+- **Response:** `{ limits: NutrientLimitWithNutrient[], demographics: { ageGroup, sex } }`
 
 ### Task 10: CRUD /api/planner/plans
 
-- **Status:** PENDING
-- **Files to Create:**
-  - `app/api/planner/plans/route.ts` - GET (list), POST (create)
-  - `app/api/planner/plans/[id]/route.ts` - GET, PUT, DELETE
-- **Endpoint:** Full CRUD for supplement plans with items
+- **Status:** DONE
+- **Files Created:**
+  - `app/api/planner/plans/route.ts` - GET (list with ?status filter), POST (create)
+  - `app/api/planner/plans/[id]/route.ts` - GET (with items), PUT (with status validation), DELETE
+- **Validation:** `lib/utils/planner-validation.ts` with 21 tests
+- **Business Rules:**
+  - Cannot update archived plans
+  - Cannot change status from active → draft
 
 ### Task 11: POST /api/planner/plans/[id]/activate
 
-- **Status:** PENDING
-- **Files to Create:**
+- **Status:** DONE
+- **Files Created:**
   - `app/api/planner/plans/[id]/activate/route.ts`
 - **Endpoint:** Converts draft plan items to active supplements
-- **Logic:** Creates supplements from plan_items, updates plan status to 'active'
+- **Logic:**
+  - Validates plan is draft with items
+  - Creates supplements from plan_items with plan_id link
+  - Creates schedules for each supplement
+  - Updates plan status to 'active' with start_date
+  - Rollback on schedule creation failure
+- **Response:** `{ success, plan, supplements, schedulesCreated }`
 
 ### Task 12: GET /api/planner/active-intake
 
-- **Status:** PENDING
-- **Files to Create:**
+- **Status:** DONE
+- **Files Created:**
   - `app/api/planner/active-intake/route.ts`
-- **Endpoint:** Returns current active supplements with nutrient data
-- **Use Case:** For intake calculation with existing supplements
+- **Endpoint:** Returns active supplements with nutrient data
+- **Features:**
+  - Optional `?include_calculation=true` for intake calculation
+  - Fetches nutrients from plan_items via plan_id
+  - Uses `calculateIntake()` for RDA/UL percentages
+- **Response:** `{ supplements, intakeResults?, demographics? }`
+
+### Shared Infrastructure
+
+- **Status:** DONE
+- **Files Created:**
+  - `lib/utils/planner-validation.ts` - Validation utilities (isValidUUID, validateCreatePlanInput, validateUpdatePlanInput, validateActivatePlanInput)
+  - `__tests__/planner-validation.test.ts` - 21 tests
+- **Files Extended:**
+  - `lib/types/planner.ts` - Added API request/response types (CreatePlanInput, UpdatePlanInput, ActivatePlanInput, NutrientsResponse, LimitsResponse, PlansListResponse, PlanResponse, ActivatePlanResponse, ActiveIntakeResponse, ActiveSupplementWithNutrients)
+
+---
+
+## Next Tasks
+
+_All planned API routes complete. Next phase: React Query hooks and UI components._
 
 ---
 
 ## Commits Log
 
-| Commit    | Message                                                  | Tasks  |
-| --------- | -------------------------------------------------------- | ------ |
-| `caf74ae` | feat: seed EFSA nutrient data and update database schema | Task 4 |
-| `fa81cd9` | feat: add planner schema (nutrients, limits, plans)      | Task 3 |
-| `0b2a3a9` | chore: setup vitest for testing                          | Task 2 |
-| `603d8d2` | chore: drop biomarker tables for planner feature         | Task 1 |
+| Commit    | Message                                                  | Tasks          |
+| --------- | -------------------------------------------------------- | -------------- |
+| `7571a11` | chore: update dependencies and refactor test setup       | Task 5,6,7,7.1 |
+| `caf74ae` | feat: seed EFSA nutrient data and update database schema | Task 4         |
+| `fa81cd9` | feat: add planner schema (nutrients, limits, plans)      | Task 3         |
+| `0b2a3a9` | chore: setup vitest for testing                          | Task 2         |
+| `603d8d2` | chore: drop biomarker tables for planner feature         | Task 1         |
 
 ---
 
