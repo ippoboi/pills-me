@@ -2,7 +2,7 @@
 
 **Branch:** `feature/supplement-planner`
 **Started:** 2026-02-20
-**Last Updated:** 2026-02-22
+**Last Updated:** 2026-02-22 (evening)
 
 ---
 
@@ -83,41 +83,115 @@
 - **New ULSource Type:** Added `'TYPICAL_RANGE'` for clinical study-based limits
 - **Sources:** EFSA DRVs, IOM DRIs, NIH ODS, PubMed, Examine.com, clinical trials
 
----
-
-## Next Tasks
-
 ### Task 5: Type Definitions
 
-- **Status:** PENDING
-- **Files to Create:**
-  - `lib/types/planner.ts` - Planner-specific types
-  - Update `lib/types/index.ts` - Export planner types
+- **Status:** DONE
+- **Files Created:**
+  - `lib/types/planner.ts` - 154 lines of planner-specific types
+  - `lib/types/index.ts` - Added export for planner types
+- **Types Defined:**
+  - Database row types: `Nutrient`, `NutrientCategory`, `NutrientLimit`, `SupplementPlan`, `PlanItem`, `PlanStatus`, `UserSex`
+  - Nutrient entry: `NutrientEntry` - single nutrient in a plan item
+  - localStorage drafts: `LocalDraftPlan`, `LocalPlanItem`
+  - Intake calculations: `IntakeStatus`, `IntakeResult`
+  - API responses: `NutrientWithCategory`, `NutrientLimitWithNutrient`, `PlanWithItems`
+  - User demographics: `UserDemographics`, `AgeGroup`
 
 ### Task 6: Calculation Utils (TDD)
 
-- **Status:** PENDING
-- **Files to Create:**
-  - `lib/utils/planner.ts` - Age calc, intake calc, status helpers
-  - `lib/utils/__tests__/planner.test.ts` - Tests first
+- **Status:** DONE
+- **Files Created:**
+  - `lib/utils/planner.ts` - 182 lines with 4 utility functions
+  - `__tests__/planner.test.ts` - 38 tests
+- **Functions Implemented:**
+  - `calculateAge(birthdate, today?)` - Calculate age from birthdate
+  - `getAgeGroup(birthdate, today?)` - Map to EFSA age groups ('18-50', '51-70', '71+')
+  - `getIntakeStatus(total, upperLimit)` - Determine status ('ok', 'warning', 'danger')
+  - `calculateIntake(draftItems, activeSupplements, limits, nutrients)` - Full intake calculation with RDA/UL percentages
 
 ### Task 7: localStorage Hooks (TDD)
 
+- **Status:** DONE
+- **Files Created:**
+  - `lib/hooks/use-draft-plans.ts` - localStorage draft management hook
+  - `__tests__/use-draft-plans.test.ts` - 27 tests
+- **Hook API:**
+  - `drafts` - Array of draft plans
+  - `createDraft(name, notes?)` - Create new draft, returns ID
+  - `updateDraft(id, updates)` - Update name/notes
+  - `deleteDraft(id)` - Remove draft
+  - `addItem(draftId, item)` - Add supplement to draft
+  - `updateItem(draftId, itemId, updates)` - Update supplement
+  - `removeItem(draftId, itemId)` - Remove supplement
+  - `getDraft(id)` - Get draft by ID
+- **Features:** Auto-persistence to localStorage, graceful error handling, SSR-safe
+
+### Task 7.1: Test Consolidation
+
+- **Status:** DONE
+- **Change:** Moved all tests to root `__tests__/` folder
+- **Files:**
+  - `__tests__/setup.ts` - jest-dom matchers
+  - `__tests__/planner.test.ts` - 38 planner util tests
+  - `__tests__/use-draft-plans.test.ts` - 27 hook tests
+- **Config Update:** `vitest.config.ts` - Added `dir: './__tests__'` (Vitest recommended)
+- **Deleted:** `lib/__tests__/`, `lib/utils/__tests__/`, `lib/hooks/__tests__/`
+- **Result:** 65 tests passing
+
+---
+
+## Next Tasks (API Routes - Can Run in Parallel)
+
+### Task 8: GET /api/planner/nutrients
+
 - **Status:** PENDING
 - **Files to Create:**
-  - `lib/hooks/use-draft-plans.ts` - localStorage draft management
-  - `lib/hooks/__tests__/use-draft-plans.test.ts` - Tests first
+  - `app/api/planner/nutrients/route.ts`
+- **Endpoint:** Returns all nutrients with category data
+- **Auth:** Required (authenticated users only)
+
+### Task 9: GET /api/planner/limits
+
+- **Status:** PENDING
+- **Files to Create:**
+  - `app/api/planner/limits/route.ts`
+- **Endpoint:** Returns nutrient limits based on user's age/sex demographics
+- **Features:** Auto-determines age group from user's birthdate
+
+### Task 10: CRUD /api/planner/plans
+
+- **Status:** PENDING
+- **Files to Create:**
+  - `app/api/planner/plans/route.ts` - GET (list), POST (create)
+  - `app/api/planner/plans/[id]/route.ts` - GET, PUT, DELETE
+- **Endpoint:** Full CRUD for supplement plans with items
+
+### Task 11: POST /api/planner/plans/[id]/activate
+
+- **Status:** PENDING
+- **Files to Create:**
+  - `app/api/planner/plans/[id]/activate/route.ts`
+- **Endpoint:** Converts draft plan items to active supplements
+- **Logic:** Creates supplements from plan_items, updates plan status to 'active'
+
+### Task 12: GET /api/planner/active-intake
+
+- **Status:** PENDING
+- **Files to Create:**
+  - `app/api/planner/active-intake/route.ts`
+- **Endpoint:** Returns current active supplements with nutrient data
+- **Use Case:** For intake calculation with existing supplements
 
 ---
 
 ## Commits Log
 
-| Commit    | Message                                                         | Tasks  |
-| --------- | --------------------------------------------------------------- | ------ |
-| `pending` | feat: seed nutrient data with EFSA limits and clinical research | Task 4 |
-| `fa81cd9` | feat: add planner schema (nutrients, limits, plans)             | Task 3 |
-| `0b2a3a9` | chore: setup vitest for testing                                 | Task 2 |
-| `603d8d2` | chore: drop biomarker tables for planner feature                | Task 1 |
+| Commit    | Message                                                  | Tasks  |
+| --------- | -------------------------------------------------------- | ------ |
+| `caf74ae` | feat: seed EFSA nutrient data and update database schema | Task 4 |
+| `fa81cd9` | feat: add planner schema (nutrients, limits, plans)      | Task 3 |
+| `0b2a3a9` | chore: setup vitest for testing                          | Task 2 |
+| `603d8d2` | chore: drop biomarker tables for planner feature         | Task 1 |
 
 ---
 
@@ -128,3 +202,6 @@
 - Vitest configured with Context7 latest docs (v4.0.18)
 - Task 4 nutrient data seeded directly via Supabase MCP (no git commit yet)
 - Researched safe levels for 14 nutrients without official EFSA/IOM limits using clinical studies
+- All tests consolidated to root `__tests__/` folder using Vitest `test.dir` option
+- Tasks 5-7 complete: types, utils, and hooks ready for API implementation
+- Tasks 8-12 are API routes that can be developed in parallel
