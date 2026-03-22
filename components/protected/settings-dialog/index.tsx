@@ -112,7 +112,7 @@ export function SettingsDialog({
 
             <Dialog.Content asChild>
               <motion.div
-                className="fixed top-1/2 left-1/2 z-50 w-[calc(100%-2rem)] max-w-[940px] lg:h-[700px] lg:min-h-[700px] lg:max-h-[700px] max-h-[85vh] overflow-y-auto bg-white rounded-3xl shadow-xl focus:outline-none"
+                className="fixed top-1/2 left-1/2 z-50 w-[calc(100%-2rem)] max-w-[940px] lg:h-[700px] lg:min-h-[700px] lg:max-h-[700px] max-h-[85vh] flex flex-col overflow-hidden bg-white rounded-3xl shadow-xl focus:outline-none"
                 initial={{ opacity: 0, scale: 0.96, x: "-50%", y: "-48%" }}
                 animate={{ opacity: 1, scale: 1, x: "-50%", y: "-50%" }}
                 exit={{ opacity: 0, scale: 0.96, x: "-50%", y: "-48%" }}
@@ -121,9 +121,9 @@ export function SettingsDialog({
                 {/* Visually hidden title for accessibility */}
                 <Dialog.Title className="sr-only">Settings</Dialog.Title>
 
-                <Tabs.Root value={activeTab} onValueChange={setActiveTab}>
+                <Tabs.Root value={activeTab} onValueChange={setActiveTab} className="flex flex-col h-full">
                   {/* Header with tabs */}
-                  <div className="flex items-center bg-gray-50 justify-between border-b border-gray-100 pl-3">
+                  <div className="flex items-center bg-gray-50 justify-between border-b border-gray-100 pl-3 shrink-0 rounded-t-3xl">
                     <Tabs.List
                       className="relative flex"
                       aria-label="Settings sections"
@@ -175,7 +175,7 @@ export function SettingsDialog({
                   </div>
 
                   {/* Tab content */}
-                  <div className="p-6 md:p-12">
+                  <div className="flex-1 overflow-y-auto p-6 md:p-12">
                     <Tabs.Content value="personal" className="focus:outline-none">
                       <PersonalInfoTab
                         user={user}
